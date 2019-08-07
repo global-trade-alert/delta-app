@@ -1,29 +1,3 @@
-# rm(list=ls())
-library(xlsx)
-library(gtalibrary)
-library(zoo)
-library(data.table)
-library(splitstackshape)
-library(plyr)
-library(stringr)
-# 
-# # setwd("/home/rstudio/Dropbox/GTA cloud")
-# 
-# gtalibrary::gta_setwd()
-# source('17 Shiny/6 Tariff database/app/functions/table_filter.R')
-
-# load('17 Shiny/6 Tariff database/GTA tariff database/fictitious database/fictitious database.Rdata')
-# # 
-# prior.new$hs=gsub('[.]','',prior.new$hs.code)
-# prior.new$hs4=str_sub(prior.new$hs,1,4)
-# prior.new$hs6=str_sub(prior.new$hs,1,6)
-
-# df=read.xlsx('17 Shiny/6 Tariff database/testqueries/testquery.xlsx', sheetIndex = 1)
-# input.query=df
-# names(input.query)
-# 
-# any(str_detect(tolower(names(input.query)),'implement'))
-
 xlsx_query=function(input.query,sort=T){
   
   base=list()
@@ -106,14 +80,4 @@ xlsx_query=function(input.query,sort=T){
   return(base)
 }
 
-# t=xlsx_query(df)
-# 
-# library(xlsx)
-# 
-# write.xlsx(data()[data()[[input$column]] == unique_values[1],], file, as.character(unique_values[1]))
-# for (i in 2:length(unique_values)) {
-#   write.xlsx(data()[data()[[input$column]] == unique_values[i],], file, as.character(unique_values[i]), append = TRUE)
-# }
-# 
-# saveWorkbook(wb, "D:/r-xlsx-report-example.xlsx")
 

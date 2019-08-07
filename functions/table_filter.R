@@ -1,32 +1,17 @@
-# rm(list=ls())
-
-# setwd("/home/rstudio/Dropbox/GTA cloud")
-
-# gtalibrary::gta_setwd()
-# # 
-# start_time <-Sys.time()
+# library(gtalibrary)
+# library(zoo)
+# library(data.table)
+# library(splitstackshape)
+# library(plyr)
+# library(stringr)
+# library(RMariaDB)
+# library(pool)
+# library(DBI)
+# library(gtasql)
+# library(RMySQL)
 # 
-# load('17 Shiny/6 Tariff database/GTA tariff database/fictitious database/fictitious database.Rdata')
-# end_time <-Sys.time()
-# 
-# end_time-start_time
-
-library(gtalibrary)
-library(zoo)
-library(data.table)
-library(splitstackshape)
-library(plyr)
-library(stringr)
-library(RMariaDB)
-library(pool)
-library(DBI)
-library(gtasql)
-library(RMySQL)
-
-#lapply(dbListConnections(MySQL()), dbDisconnect)
-
 # gta_sql_pool_open()
-
+# 
 # hs.codes='20110,020120,201,410419211,71021,71022,71029,71039,51110,50800'
 # # cpc.codes=NULL
 # cpc.codes='21,22,23,24,60,61,62,63,64,40,41,42,43,44,10,11,12,13'
@@ -42,10 +27,6 @@ library(RMySQL)
 # tariff.unit='Any'
 # show.previous=F
 # sort=T
-
-# prior.new$hs=gsub('[.]','',prior.new$hs.code)
-# prior.new$hs4=str_sub(prior.new$hs,1,4)
-# prior.new$hs6=str_sub(prior.new$hs,1,6)
 
 table_filter=function(
   hs.codes='20110,020120,201,410419211,71021,71022,71029,71039,51110,50800',
@@ -71,16 +52,11 @@ table_filter=function(
   codes[which(nchar(codes)==3|(nchar(codes)==5))]=paste0('0',codes[which(nchar(codes)==3|(nchar(codes)==5))])
   
   codes=toString(sprintf("'%s'",codes))
-  #pull in prior_new with sql now, to speed data import
   sql=paste(sql,
             sprintf("AND (hs4 IN (%s) OR",codes),
             sprintf("hs6 IN (%s) OR",codes),
             sprintf("hs IN (%s))",codes),
             sep=' ')
-  
-  # base<-gta_sql_get_value(sql)
-  # end_time=Sys.time()
-  # end_time-start_time
   
   if(!'Any' %in% tariff.unit){
     tariff.unit=toString(sprintf("'%s'", tariff.unit))
@@ -244,5 +220,3 @@ table_filter=function(
   return(list(unique(base)))
 }  
 
-
-# new=table_filter()

@@ -5,13 +5,23 @@ library(shinyWidgets)
 library(gtasql)
 library(pool)
 library(DT)
+library(gtalibrary)
+library(zoo)
+library(data.table)
+library(splitstackshape)
+library(plyr)
+library(stringr)
+library(RMariaDB)
+library(DBI)
+library(RMySQL)
+library(xlsx)
 
-lapply(dbListConnections(MySQL()), dbDisconnect)
+#lapply(dbListConnections(MySQL()), dbDisconnect)
 
 gta_setwd()
-app.path='17 Shiny/6 Tariff database/app'
-source('17 Shiny/6 Tariff database/app/server.R')
-source('17 Shiny/6 Tariff database/app/ui.R', local=T)
+app.path='0 dev/delta-app-ks/'
+source(paste0(app.path,'server.R'))
+source(paste0(app.path,'ui.R'), local=T)
 
 shinyApp(ui,
          server,

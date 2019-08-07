@@ -1,13 +1,6 @@
-library(DT)
-library(gtalibrary)
-library(shiny)
-library(shinyjs)
-library(shinyWidgets)
-
-lapply(dbListConnections(MySQL()), dbDisconnect)
 gta_sql_pool_open()
 
-addResourcePath(prefix = 'www', directoryPath = paste0(app.path,'/www'))
+addResourcePath(prefix = 'www', directoryPath = paste0(app.path,'www'))
 
 ui <- fluidPage(
   useShinyjs(),

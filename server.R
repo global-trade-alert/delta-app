@@ -1,15 +1,5 @@
-library(xlsx)
-library(gtalibrary)
-library(zoo)
-library(data.table)
-library(splitstackshape)
-library(plyr)
-library(stringr)
-library(data.table)
-library(DT)
-
-source(paste0(app.path,'/functions/table_filter.R'))
-source(paste0(app.path,'/functions/xlsx_query.R'))
+source(paste0(app.path,'functions/table_filter.R'))
+source(paste0(app.path,'functions/xlsx_query.R'))
 
 server <- function(input, output, session) {
   
