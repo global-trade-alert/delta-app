@@ -19,7 +19,7 @@ library(xlsx)
 #lapply(dbListConnections(MySQL()), dbDisconnect)
 
 gta_setwd()
-app.path='17 Shiny/6 delta app/code'
+app.path<<-'17 Shiny/6 delta app/code/'
 source(paste0(app.path,'server.R'))
 source(paste0(app.path,'ui.R'), local=T)
 
