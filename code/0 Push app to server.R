@@ -1,4 +1,4 @@
-app.path='/home/rstudio/Dropbox/GTA cloud/0 dev/delta-app-ks/'
+app.path='/home/rstudio/Dropbox/GTA cloud/17 Shiny/6 delta app/code/'
 copy.path='/home/rstudio/ShinyApps/tariff/'
 
 ##### DON'T USE THIS UNLESS YOU KNOW WHAT YOU ARE DOING!
