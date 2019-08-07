@@ -58,6 +58,9 @@ table_filter=function(
             sprintf("hs IN (%s))",codes),
             sep=' ')
   
+  sql=paste(sql,sprintf('AND (date_implemented BETWEEN %s',toString(sprintf("'%s'",start.date))))
+  sql=paste(sql,sprintf('AND %s)',toString(sprintf("'%s'",end.date))))
+  
   if(!'Any' %in% tariff.unit){
     tariff.unit=toString(sprintf("'%s'", tariff.unit))
     sql=paste(sql,sprintf("AND (applied_value_unit in (%s))",tariff.unit),sep=' ')
