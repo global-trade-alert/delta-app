@@ -64,7 +64,7 @@ table_filter=function(
   }
   
   
-  codes[which(nchar(codes)==3|(nchar(codes)==5))]=paste0('0',codes[which(nchar(codes)==3|(nchar(codes)==5))])
+  codes[which(nchar(codes)==5)]=paste0('0',codes[which(nchar(codes)==5)])
   
   codes=toString(sprintf("'%s'",codes))
   sql=paste(sql,
