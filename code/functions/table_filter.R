@@ -30,7 +30,7 @@
 
 table_filter=function(
   hs.codes=NULL,
-  cpc.codes=NULL,
+  cpc.codes='deactivated',
   implementing.jurisdiction=NULL,
   affected.jurisdiction=NULL,
   start.date=NULL,
@@ -60,7 +60,10 @@ table_filter=function(
   }
   
   if(!is.null(cpc.codes)){
-    codes=c(codes,subset(cpc.to.hs,cpc %in% unlist(strsplit(as.character(cpc.codes),',')))$hs)
+    # I will take this out for now, since it complicates things and is not relevant at this stage.
+    # What complicates things is that the user could supply 2 or 3 digit CPC codes 
+    # and some of these are indistinguishable e.g. "13" could be the 3-digit "013" or the 2-digit "13".
+    # codes=c(codes,subset(cpc.to.hs,cpc %in% unlist(strsplit(as.character(cpc.codes),',')))$hs)
   }
   
   
