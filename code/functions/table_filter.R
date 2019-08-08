@@ -53,7 +53,8 @@ table_filter=function(
   
   #code filter (cpc and hs)
   if(!is.null(hs.codes)){
-    codes=unlist(strsplit(as.character(hs.codes),','))
+    codes=unlist(strsplit(as.numeric(as.character(hs.codes)),','))
+    code=gta_hs_code_check(codes)
   } else {
     codes=character()
   }
