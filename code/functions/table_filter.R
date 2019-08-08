@@ -29,26 +29,40 @@
 # sort=T
 
 table_filter=function(
-  hs.codes='20110,020120,201,410419211,71021,71022,71029,71039,51110,50800',
-  cpc.codes='21,22,23,24,60,61,62,63,64,40,41,42,43,44,10,11,12,13',
-  implementing.jurisdiction=c('Afghanistan','Andorra','Armenia','Solomon Islands',
-                              'Croatia','Jamaica','Norfolk Island'),
-  affected.jurisdiction='Any',
-  start.date=as.Date('2008-01-01'),
-  end.date=as.Date('2016-02-01'),
+  hs.codes=NULL,
+  cpc.codes=NULL,
+  implementing.jurisdiction=NULL,
+  affected.jurisdiction=NULL,
+  start.date=NULL,
+  end.date=NULL,
   regime.types='Any',
   regime.names='Any',
   tariff.unit='Any',
   show.previous=F,
   sort=T
 ){
+  
+  ## check inputs for completeness
+  if((is.null(hs.codes) & is.null(cpc.codes))|is.null(implementing.jurisdiction)|is.null(affected.jurisdiction)){
+    stop("Complete input requires at least one implementer, date and HS or CPC code.")
+  }
+  
   start_time <-Sys.time()
   
   sql="SELECT * FROM prior_new WHERE 1=1"
   
   #code filter (cpc and hs)
-  codes=unlist(strsplit(as.character(hs.codes),','))
-  codes=c(codes,subset(cpc.to.hs,cpc %in% unlist(strsplit(as.character(cpc.codes),',')))$hs)
+  if(!is.null(hs.codes)){
+    codes=unlist(strsplit(as.character(hs.codes),','))
+  } else {
+    codes=character()
+  }
+  
+  if(!is.null(cpc.codes)){
+    codes=c(codes,subset(cpc.to.hs,cpc %in% unlist(strsplit(as.character(cpc.codes),',')))$hs)
+  }
+  
+  
   codes[which(nchar(codes)==3|(nchar(codes)==5))]=paste0('0',codes[which(nchar(codes)==3|(nchar(codes)==5))])
   
   codes=toString(sprintf("'%s'",codes))
