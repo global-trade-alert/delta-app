@@ -70,7 +70,11 @@ table_filter=function(
   sql=paste(sql,
             sprintf("AND hs IN (%s)",codes),
             sep=' ')
-  
+  ## Date of interest
+  # Please:
+  # 1) change to single date
+  # 2) Add a check that confirms that what was imported is understood as a date by R.
+  # 3) Amend the SQL query accordingly.
   sql=paste(sql,sprintf('AND (date_implemented BETWEEN %s',toString(sprintf("'%s'",start.date))))
   sql=paste(sql,sprintf('AND %s)',toString(sprintf("'%s'",end.date))))
   
