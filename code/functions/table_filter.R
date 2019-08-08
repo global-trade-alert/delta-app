@@ -53,6 +53,10 @@ table_filter=function(
   
   #code filter (cpc and hs)
   if(!is.null(hs.codes)){
+    
+    ## rephrase this part to record the query precision for each code. 
+    ## Need it later to compare it to source precision.
+    
     codes=unlist(strsplit(as.numeric(as.character(hs.codes)),','))
     code=gta_hs_code_check(codes)
   } else {
@@ -105,10 +109,20 @@ table_filter=function(
 
   base<-gta_sql_get_value(sql)
   
-  base$match.precision=4
-  base$match.precision[which(base$hs6 %in% codes)]=6
-  base$match.precision[which(base$hs %in% codes)]=nchar(base$hs[which(base$hs %in% codes)])
-  base$match.precision=paste0(base$match.precision,' Digits')
+  # comparing match and source precision
+  # 1) load the subset of new table hs.source.list for the hs.source.id's in 'base'
+  # 2) merge that subset to base or otherwise compare the source precision with the query precision.
+  # 3) Displayed output:
+  ### if source.precision > query.precision: "+ (source.precision vs. query.precision)" e.g "+ (6 vs. 4)"
+  ### if source.precision = query.precision: "= (source.precision)"
+  ### if source.precision < query.precision: "- (source.precision vs. query.precision)"
+  
+  # base$match.precision=4
+  # base$match.precision[which(base$hs6 %in% codes)]=6
+  # base$match.precision[which(base$hs %in% codes)]=nchar(base$hs[which(base$hs %in% codes)])
+  # base$match.precision=paste0(base$match.precision,' Digits')
+  
+  
   base$cpc.code=mapvalues(as.numeric(base$hs6),cpc.to.hs$hs,cpc.to.hs$cpc)
 
   base=subset(base,select=c('intervention.id','regime.id','cpc.code','hs.code','applied.value','applied.value.unit','date.implemented','match.precision'))
