@@ -71,9 +71,7 @@ table_filter=function(
   
   codes=toString(sprintf("'%s'",codes))
   sql=paste(sql,
-            sprintf("AND (hs4 IN (%s) OR",codes),
-            sprintf("hs6 IN (%s) OR",codes),
-            sprintf("hs IN (%s))",codes),
+            sprintf("AND hs IN (%s)",codes),
             sep=' ')
   
   sql=paste(sql,sprintf('AND (date_implemented BETWEEN %s',toString(sprintf("'%s'",start.date))))
