@@ -86,6 +86,7 @@ table_filter=function(
   # }  
   # 
   
+  ## Adjust the below and the UI to my comments on regime types and names in the trello card.
   if(!'Any' %in% regime.names & !'Any' %in% regime.types){
     regime.names=toString(sprintf("'%s'",regime.names))
     sql=paste(sql,sprintf("AND (regime_id in (SELECT regime_id FROM regime_list WHERE (regime_name IN (%s)))",regime.names))
