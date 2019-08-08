@@ -66,9 +66,6 @@ table_filter=function(
     # codes=c(codes,subset(cpc.to.hs,cpc %in% unlist(strsplit(as.character(cpc.codes),',')))$hs)
   }
   
-  
-  codes[which(nchar(codes)==5)]=paste0('0',codes[which(nchar(codes)==5)])
-  
   codes=toString(sprintf("'%s'",codes))
   sql=paste(sql,
             sprintf("AND hs IN (%s)",codes),
