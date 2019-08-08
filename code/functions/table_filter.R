@@ -78,10 +78,13 @@ table_filter=function(
   sql=paste(sql,sprintf('AND (date_implemented BETWEEN %s',toString(sprintf("'%s'",start.date))))
   sql=paste(sql,sprintf('AND %s)',toString(sprintf("'%s'",end.date))))
   
-  if(!'Any' %in% tariff.unit){
-    tariff.unit=toString(sprintf("'%s'", tariff.unit))
-    sql=paste(sql,sprintf("AND (applied_value_unit in (%s))",tariff.unit),sep=' ')
-  }  
+  
+  # This is not a necessary choice variable
+  # if(!'Any' %in% tariff.unit){
+  #   tariff.unit=toString(sprintf("'%s'", tariff.unit))
+  #   sql=paste(sql,sprintf("AND (applied_value_unit in (%s))",tariff.unit),sep=' ')
+  # }  
+  # 
   
   if(!'Any' %in% regime.names & !'Any' %in% regime.types){
     regime.names=toString(sprintf("'%s'",regime.names))
