@@ -57,8 +57,28 @@ table_filter=function(
     ## rephrase this part to record the query precision for each code. 
     ## Need it later to compare it to source precision.
     
-    codes=unlist(strsplit(as.numeric(as.character(hs.codes)),','))
-    code=gta_hs_code_check(codes)
+    ## Also, there will be two paths for data extraction. 
+    ## A) One for queries with code lengths up-to-and-including 6 digits.
+    ## B) The other for code lengths exceeding 6 digits. 
+    
+    ## (A) is as you implemented here. 
+    ## (B) will require a check of the hs.source.list for records of the same length.
+    ## Here is the scenario: An editor comes with a tariff change on the 8-digit level. Unless we have better information, we compare this 8-digit-level tariff to the 6-digit-level tariff. Right now, we never have better information. 
+    ## But thanks to this app, we may eventually have it. So for queries with digit-levels exceeding 6, we need a first check whether we have a record of equal precision in hs.source.list.
+    
+    code.temp=unlist(strsplit(as.numeric(as.character(hs.codes)),','))
+    up.to.6.digits=code.temp[code.temp<1000000]
+    exceeding.6.digits=code.temp[code.temp>=1000000]
+    
+    if(length(exceeding.6.digits)>0){
+      ## please add a check here if the code exists in prior.new
+      ## those that are NOT in prior.new should be truncated to 5/6 digits and added to up.to.6.digits
+    }
+
+    codes=unlist(strsplit(as.numeric(as.character(up.to.6.digits)),','))
+    codes=gta_hs_code_check(codes)
+    rm(code.temp)
+    
   } else {
     codes=character()
   }
@@ -74,6 +94,9 @@ table_filter=function(
   sql=paste(sql,
             sprintf("AND hs IN (%s)",codes),
             sep=' ')
+  
+
+  
   ## Date of interest
   # Please:
   # 1) change to single date
