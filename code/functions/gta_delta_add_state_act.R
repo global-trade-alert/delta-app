@@ -7,8 +7,11 @@ gta_delta_add_state_act=function(
   source.official=NULL,
   author=NULL,
   intervention.type=NULL,
+  affected.flow=NULL,
   implementing.jurisdiction=NULL,
   implementer.end.date=NA,
+  implementation.level=NULL,
+  eligible.firms=NULL,
   affected.code=NULL,
   affected.code.type=NULL,
   affected.code.end.date=NA,
@@ -20,11 +23,13 @@ gta_delta_add_state_act=function(
   regime.name=NULL,
   regime.new.to.db=NULL
   ){
+  
   # Setup
   treatment.tables=c("tariff","subsidy","investment","migration")
   
   
-  #### basic checks that need to hold up before touching the SQL datbase
+  ######## basic checks 
+  ## need to hold up before touching the SQL datbase
 
   ### Parameter completeness check
   ## TBA write check that ensures required fields are filled
@@ -70,12 +75,20 @@ gta_delta_add_state_act=function(
   # please create
   # this.int.type.id
   # this.flow.id
-  # this.impl.level.id
+  # this.imp.level.id
   # this.firms.id
   # this.implementer.id 
   # this.treatment.unit.id
   # this.affected.country.id (if specified)
   
+  # NOTE 2 things for the country IDs
+  # 1) We want to use the GTA IDs in this database (the primary key on jurisdiction_list reflects that).
+  # 2) We want to support all user-defined country groups. That raises a question and a general point. 
+  #    The general point is that this is the time to partially integrate with the GTA's main database. Do this based on the elsewhere-defined country groups by uploading from GTA cloud/data/database replica into ricardodev using the filename as the table name. files: gta_jurisdiction_group, gta_jurisdiction_group_member. It's pobably a good idea to delete delta_jurisdiction_list and replace it with gta_jurisdiction (on which it is based anyway).
+  #    The question is how to treat those groups in the database: 
+  #    Are they their own jurisdiction ID (and would thus have to be added to gta_jurisdiction on ricardodev)? If so, is this the only or the n+1'th jurisdiction ID that is recorded on the relevant table?
+  #    Or are they only recorded in disaggregated form (e.g. all EU members as implementers, but not the EU itself).
+  #    We use the "disaggregated approach" on the main site. I guess we should do it here (but can be convinced otherwise).
   
   ## date.implemented
   ## could be a vector, check that all values are specified & interpretable as a date.
@@ -130,9 +143,56 @@ gta_delta_add_state_act=function(
     rm(regime.log.update)
   } 
   
-   
   
-  #### Writing to the database
+  
+  ######### Parsing input into state acts & interventions
+  ## preparing DF for gta_input_parser
+  delta.data=data.frame(treatment.area=treatment.area,
+                        date.announced=date.announced,
+                        date.implemented=date.implemented,
+                        source=source,
+                        source.official=source.official,
+                        author.id=this.author.id,
+                        intervention.type.id=intervention.type.id,
+                        affected.flow.id=this.affected.flow.id,
+                        implementing.jurisdiction.id=this.implementer.id,
+                        implementer.end.date=implementer.end.date,
+                        implementation.level.id=this.imp.level.id,
+                        eligible.firms.id=this.firms.id,
+                        affected.code=affected.code,
+                        affected.code.type=affected.code.type,
+                        affected.country.end.date=affected.country.end.date,
+                        treatment.value=treatment.value, 
+                        treatment.unit.id=this.treatment.unit.id, 
+                        treatment.code.official=treatment.code.official,
+                        stringsAsFactors = F)
+  
+  if(! is.null(affected.country)){
+    delta.data$affected.jurisdiction.id=this.affected.country.id
+    delta.data$affected.country.end.date=affected.country.end.date
+  } else {
+    delta.data$affected.jurisdiction.id=NA
+    delta.data$affected.country.end.date=NA
+  }
+  
+  if(! is.null(regime.name)){
+    delta.data$regime.id=this.regime.id
+  } else {
+    delta.data$regime.id=NA
+  }
+  
+  gta_delta_input_parser(delta.data)
+  
+  
+  
+  
+  
+  
+  ## ONE MORE CHECK
+  ## validate that the reported treatments are actually NEW i.e. different from the relevant prior value
+  
+  
+  ######### Writing to the database
   
   ## creating state act
 
@@ -157,7 +217,7 @@ gta_delta_add_state_act=function(
                                      implementation.level.id=this.impl.level.id,
                                      eligible.firms.id=this.firms.id,
                                      is.mfn=is.null(affected.country),
-                              stringsAsFactors = F)
+                                     stringsAsFactors = F)
   
   this.intervention.id=gta_sql_append_table(append.table = "intervention.log",
                                   append.by.df = "intervention.log.update",
