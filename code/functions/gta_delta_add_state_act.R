@@ -7,11 +7,8 @@ gta_delta_add_state_act=function(
   source.official=NULL,
   author=NULL,
   intervention.type=NULL,
-  affected.flow=NULL,
   implementing.jurisdiction=NULL,
   implementer.end.date=NA,
-  implementation.level=NULL,
-  eligible.firms=NULL,
   affected.code=NULL,
   affected.code.type=NULL,
   affected.code.end.date=NA,
@@ -22,180 +19,14 @@ gta_delta_add_state_act=function(
   affected.country.end.date=NA,
   regime.name=NULL,
   regime.new.to.db=NULL
-  ){
-  
+){
   # Setup
   treatment.tables=c("tariff","subsidy","investment","migration")
   
-  
-  ######## basic checks 
-  ## need to hold up before touching the SQL datbase
-
-  ### Parameter completeness check
-  ## TBA write check that ensures required fields are filled
-  ## if not, all non-specified fields are reported in the same error message
-  ## required fields are 
-  ## treatment.area, source, source.official, author, treatment.area, 
-  ## intervention.type, affected.flow, implementation.level, eligible firms,
-  ## implementing.jurisdiction, affected.code, affected.code.type, treatment.value, treatment.unit, treatment.code.official
-  ## date.implemented
-  
-  
-  ### Parameter correctness check
-  ## These checks ensure that the specified values are interpretable
-  
-  # valid treatment.area
-  if(! treatment.area %in% treatment.tables){
-    stop(paste("You treatment areas should be one of the following: ", paste(treatment.tables, collapse="; "),".", sep=""))
-  }
-  
-  ## NOTE
-  ## These parameters will be vectors in many cases.
-  
-  # date.announced (won't be a vector since I will only feed the function 1 state act at a time)
-  if(is.na(as.Date(date.announced, "%Y-%m-%d"))){
-    stop("Please specify the announcement date in YYY-mm-dd.")
-  }
-  
-  # TBA source.official
-  # source.official must be T or F
-
-  ## TBA author, intervention.type, affected.flow, implementation.level, eligible firms, implementing.jurisdiction, affected.code.type, treatment.unit, affected.country (if specified)
-  ## check the phrases against those in the relevent log/list-df
-  ## store the ID using the following example
-  ## this.author.id
-  sql <- "SELECT user_id FROM user_log WHERE user_login = ?fromwhom;"
-  query <- sqlInterpolate(pool, 
-                          sql, 
-                          fromwhom = author)
-  
-  this.author.id=gta_sql_get_value(query)
-  rm(query)
-  
-  # please create
-  # this.int.type.id
-  # this.flow.id
-  # this.imp.level.id
-  # this.firms.id
-  # this.implementer.id 
-  # this.treatment.unit.id
-  # this.affected.country.id (if specified)
-  
-  # NOTE 2 things for the country IDs
-  # 1) We want to use the GTA IDs in this database (the primary key on jurisdiction_list reflects that).
-  # 2) We want to support all user-defined country groups. That raises a question and a general point. 
-  #    The general point is that this is the time to partially integrate with the GTA's main database. Do this based on the elsewhere-defined country groups by uploading from GTA cloud/data/database replica into ricardodev using the filename as the table name. files: gta_jurisdiction_group, gta_jurisdiction_group_member. It's pobably a good idea to delete delta_jurisdiction_list and replace it with gta_jurisdiction (on which it is based anyway).
-  #    The question is how to treat those groups in the database: 
-  #    Are they their own jurisdiction ID (and would thus have to be added to gta_jurisdiction on ricardodev)? If so, is this the only or the n+1'th jurisdiction ID that is recorded on the relevant table?
-  #    Or are they only recorded in disaggregated form (e.g. all EU members as implementers, but not the EU itself).
-  #    We use the "disaggregated approach" on the main site. I guess we should do it here (but can be convinced otherwise).
-  
-  ## date.implemented
-  ## could be a vector, check that all values are specified & interpretable as a date.
-  
-  ## TBA affected.code
-  # is it numeric/integer of a length that makes sense? 
-  # also, please expand all HS codes with less than 6-digits and/or cpc codes with less than 3-digit
-  # After this section, affected.code should only include the correct HS/CPC digit length (6/3)
-  # If you have to expand, please create
-  if(there.is.at.least.one.coarse.code){
-    coarse.code.update=data.frame(coarse.code=the.coarse.code.vector,
-                                  coarse.code.type=the.coarse.code.type.vector,
-                                  stringsAsFactors = F)
-    
-  } else {
-    coarse.code.update=data.frame()
-  }
-  
-  
-  ## TBA treatment.value
-  ## is it numeric/integer of a length that makes sense? 
-  
-  # TBA treatment.code.official
-  # source.official must be T or F
-  
-  ## TBA affected.country.end.date (if specified, default is NA)
-  ## note that his could be a vector with NA's (! not NULL's) plus dates e.g. a preferential regime for China and India that is still in force for one of them but expired for the other.
-  
-  ## TBA affected.code.end.date (if specified, default is NA)
-  ## same note as for affected.country.end.date
-  
-  ## TBA implementer.end.date (if specified, default is NA)
-  ## we may want to worry about this one last
-  ## same note as for affected.country.end.date
-  ## Also, this cannot contain a date for all implementers of the intervention.
-  
-  ## regime.name & regime.new.to.db
-  ## First check that either of these is not NULL, if so check that the name is (not) in the system and append regime.log, if appropriate.
-  ## you can store the regime id already here since we will need it further down. 
-  ## There is a new get.id parameter in gta_sql_append_table that helps you do it e.g gta_sql_append_table(get.id="regime.id")
-  if(regime.new.to.db){
-    
-    # create new regime ID
-    regime.log.update=data.frame(regime.id=NA,
-                                 regime.name=regime.name,
-                                 user.id=this.author.id,
-                                 stringsAsFactors = F)
-    
-    this.regime.id=gta_sql_append_table(append.table = "regime.log",
-                                        append.by.df = "regime.log.update",
-                                        get.id = "regime.id")
-    rm(regime.log.update)
-  } 
-  
-  
-  
-  ######### Parsing input into state acts & interventions
-  ## preparing DF for gta_input_parser
-  delta.data=data.frame(treatment.area=treatment.area,
-                        date.announced=date.announced,
-                        date.implemented=date.implemented,
-                        source=source,
-                        source.official=source.official,
-                        author.id=this.author.id,
-                        intervention.type.id=intervention.type.id,
-                        affected.flow.id=this.affected.flow.id,
-                        implementing.jurisdiction.id=this.implementer.id,
-                        implementer.end.date=implementer.end.date,
-                        implementation.level.id=this.imp.level.id,
-                        eligible.firms.id=this.firms.id,
-                        affected.code=affected.code,
-                        affected.code.type=affected.code.type,
-                        affected.country.end.date=affected.country.end.date,
-                        treatment.value=treatment.value, 
-                        treatment.unit.id=this.treatment.unit.id, 
-                        treatment.code.official=treatment.code.official,
-                        stringsAsFactors = F)
-  
-  if(! is.null(affected.country)){
-    delta.data$affected.jurisdiction.id=this.affected.country.id
-    delta.data$affected.country.end.date=affected.country.end.date
-  } else {
-    delta.data$affected.jurisdiction.id=NA
-    delta.data$affected.country.end.date=NA
-  }
-  
-  if(! is.null(regime.name)){
-    delta.data$regime.id=this.regime.id
-  } else {
-    delta.data$regime.id=NA
-  }
-  
-  gta_delta_input_parser(delta.data)
-  
-  
-  
-  
-  
-  
-  ## ONE MORE CHECK
-  ## validate that the reported treatments are actually NEW i.e. different from the relevant prior value
-  
-  
-  ######### Writing to the database
+  #### Writing to the database
   
   ## creating state act
-
+  
   state.act.update=data.frame(date.announced=date.announced,
                               state.act.source=source,
                               is.source.official=source.official,
@@ -204,8 +35,8 @@ gta_delta_add_state_act=function(
                               stringsAsFactors = F)
   
   this.sa.id=gta_sql_append_table(append.table = "state.act.log",
-                       append.by.df = "state.act.update",
-                       get.id="state.act.id")
+                                  append.by.df = "state.act.update",
+                                  get.id="state.act.id")
   
   rm(state.act.update)
   
@@ -220,8 +51,8 @@ gta_delta_add_state_act=function(
                                      stringsAsFactors = F)
   
   this.intervention.id=gta_sql_append_table(append.table = "intervention.log",
-                                  append.by.df = "intervention.log.update",
-                                  get.id="intervention.id")
+                                            append.by.df = "intervention.log.update",
+                                            get.id="intervention.id")
   
   rm(intervention.log.update)
   
@@ -244,7 +75,7 @@ gta_delta_add_state_act=function(
                                   treatment.unit.id=this.treatment.unit.id,
                                   treatment.code.official=treatment.code.official,
                                   stringsAsFactors = F)
-    
+  
   gta_sql_append_table(append.table = paste(treatment.area,".log",sep=""),
                        append.by.df = "treatment.log.update")
   
@@ -261,7 +92,7 @@ gta_delta_add_state_act=function(
                          append.by.df = "deviation.affected.update")
     
     rm(deviation.affected.update)
-  
+    
   }
   
   # deviation.code
@@ -315,7 +146,7 @@ gta_delta_add_state_act=function(
     
   }
   
-
+  
   ## Updating regime, if specified (regime.log & intervention.regime)
   if(!is.null(regime.name)){
     
