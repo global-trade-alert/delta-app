@@ -23,8 +23,7 @@ gta_delta_add_state_act=function(
   framework.new.to.db=NULL
 ){
   # Setup
-  treatment.tables=c("tariff","subsidy","investment","migration")
-  
+
   library(lubridate)
   library(stringr)
   #### basic checks that need to hold up before touching the SQL datbase
@@ -56,7 +55,8 @@ gta_delta_add_state_act=function(
   ## Interpretability checks
 
   # valid treatment.area
-  if(!all(treatment.area %in% treatment.tables)){
+  if(!all(treatment.area %in% c(gta_sql_get_value("SELECT DISTINCT `treatment_area_id` FROM `delta_treatment_area_list`"),
+                                gta_sql_get_value("SELECT DISTINCT `treatment_area_name` FROM `delta_treatment_area_list`")))){
     stop(paste("Your treatment areas should be one of the following: ", paste(treatment.tables, collapse="; "),".", sep=""))
   }
   
