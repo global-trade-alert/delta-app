@@ -19,8 +19,8 @@ gta_delta_add_state_act=function(
   treatment.code.official=NULL,
   affected.country=NULL,
   affected.country.end.date=NA,
-  regime.name=NULL,
-  regime.new.to.db=NULL
+  framework.name=NULL,
+  framework.new.to.db=NULL
 ){
   # Setup
   treatment.tables=c("tariff","subsidy","investment","migration")
@@ -182,12 +182,11 @@ gta_delta_add_state_act=function(
     stop("Please enter the affected.code.type's name or its id: 1 or hs; 2 or cpc")
   }
 
-  affected.code=c(323,'4.323',2342,256343)
-  affected.code.type=c('cpc','cpc','hs','hs')
-  id=1:4
+  # affected.code=c(323,'4.323',2342,256343)
+  # affected.code.type=c('cpc','cpc','hs','hs')
+  
   df.affected.code=data.frame(affected.code=as.numeric(gsub('\\D','',affected.code)),
-                              affected.code.type=affected.code.type,
-                              id=id)
+                              affected.code.type=affected.code.type)
   
   if(nrow(subset(df.affected.code, nchar(affected.code)!=3 & affected.code.type=='cpc'))>0){
     stop("Cpc codes must be given in a three digit format")
@@ -197,27 +196,33 @@ gta_delta_add_state_act=function(
     stop("Hs codes must be between 4(3) and 6(5) digits long")
   }
    
+  #disregarding this for now
   ## TBA affected.code
   # is it numeric/integer of a length that makes sense? 
   # also, please expand all HS codes with less than 6-digits
   ######## and/or cpc codes with less than 3-digit: We decided only 3 digits allowed as entry
   # After this section, affected.code should only include the correct HS/CPC digit length (6/3)
 
-  #if someone enters 8 digits hs? We throw away the information completely right?  
-  
   if(nrow(subset(df.affected.code, nchar(affected.code) < 6 & affected.code.type=='hs'))>0){
     
-    coarse.idx=which(nchar(df.affected.code$affected.code) < 6 & df.affected.code$affected.code.type=='hs')
-    coarse.code.update=data.frame(coarse.code=df.affected.code$affected.code[coarse.idx],
-                                  coarse.code.type=df.affected.code$affected.code.type[coarse.idx],
-                                  stringsAsFactors = F)
-
-    rm(coarse.idx)
-  } else {
-    coarse.code.update=data.frame()
+    for(code in subset(df.affected.code, affected.code.type=='hs')$affected.code){
+      if(is.null(gta_hs_code_check(code))){
+        stop(paste0('The following code returned no values: ', code))
+      }
+    }
+    
+  #  coarse.idx=which(nchar(df.affected.code$affected.code) < 6 & df.affected.code$affected.code.type=='hs')
+  # 
+  #   coarse.code.update=data.frame(coarse.code=df.affected.code$affected.code[coarse.idx],
+  #                                 coarse.code.type=df.affected.code$affected.code.type[coarse.idx],
+  #                                 stringsAsFactors = F)
+  # 
+  #   rm(coarse.idx)
+  # } else {
+  #   coarse.code.update=data.frame()
   }
   
-  df.affected.code$affected.code=str_sub(df.affected.code$affected.code,1,6)
+  # df.affected.code$affected.code=str_sub(df.affected.code$affected.code,1,6)
   
   
   
@@ -324,26 +329,27 @@ gta_delta_add_state_act=function(
   ## you can store the regime id already here since we will need it further down. 
   ## There is a new get.id parameter in gta_sql_append_table that helps you do it e.g gta_sql_append_table(get.id="regime.id")
   
-  # regime.name
-  if(!all(affected.country %in% c(gta_sql_get_value("SELECT DISTINCT `un_code` FROM `gta_jurisdiction_list`")$un.code,
-                                  gta_sql_get_value("SELECT DISTINCT `name` FROM `gta_jurisdiction_list`")$name))){
-    stop("Please enter the affected.country's un code or it's name")
+  # framework,name
+  if(!all(framework.name %in% c(gta_sql_get_value("SELECT DISTINCT `framework_id` FROM `gta_framework_log`")$framework.id,
+                                  gta_sql_get_value("SELECT DISTINCT `framework_name` FROM `gta_framework_log`")$framework.name))){
+    stop("Please enter a valid framework(regime) name or id")
   }
   
   
-  if(regime.new.to.db){
-    
-    # create new regime ID
-    regime.log.update=data.frame(regime.id=NA,
-                                 regime.name=regime.name,
-                                 user.id=this.author.id,
-                                 stringsAsFactors = F)
-    
-    this.regime.id=gta_sql_append_table(append.table = "regime.log",
-                                        append.by.df = "regime.log.update",
-                                        get.id = "regime.id")
-    rm(regime.log.update)
-  } 
+  #decided against this for the time being
+  # if(regime.new.to.db){
+  #   
+  #   # create new regime ID
+  #   regime.log.update=data.frame(regime.id=NA,
+  #                                regime.name=regime.name,
+  #                                user.id=this.author.id,
+  #                                stringsAsFactors = F)
+  #   
+  #   this.regime.id=gta_sql_append_table(append.table = "regime.log",
+  #                                       append.by.df = "regime.log.update",
+  #                                       get.id = "regime.id")
+  #   rm(regime.log.update)
+  # } 
   
-  
+  print("All parameters are well entered!")
 }
