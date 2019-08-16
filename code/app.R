@@ -14,7 +14,6 @@ library(stringr)
 library(RMariaDB)
 library(DBI)
 library(RMySQL)
-library(xlsx)
 
 #lapply(dbListConnections(MySQL()), dbDisconnect)
 
@@ -26,7 +25,7 @@ source(paste0(app.path,'ui.R'), local=T)
 shinyApp(ui,
          server,
          onStart = function() {
-           gta_sql_pool_open()
+           gta_sql_pool_open(table.prefix = 'delta_',got.keyring = F)
            cat("Opening SQL connection\n")
            onStop(function() {
              gta_sql_pool_close()
