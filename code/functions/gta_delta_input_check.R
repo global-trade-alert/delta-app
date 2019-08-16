@@ -57,7 +57,9 @@ gta_delta_add_state_act=function(
   # valid treatment.area
   if(!all(treatment.area %in% c(gta_sql_get_value("SELECT DISTINCT `treatment_area_id` FROM `delta_treatment_area_list`"),
                                 gta_sql_get_value("SELECT DISTINCT `treatment_area_name` FROM `delta_treatment_area_list`")))){
-    stop(paste("Your treatment areas should be one of the following: ", paste(treatment.tables, collapse="; "),".", sep=""))
+    stop(paste("Your treatment areas should be one of the following: ", paste(c(gta_sql_get_value("SELECT DISTINCT `treatment_area_id` FROM `delta_treatment_area_list`"),
+                                                                                gta_sql_get_value("SELECT DISTINCT `treatment_area_name` FROM `delta_treatment_area_list`")),
+                                                                                collapse="; "),", respectively.", sep=""))
   }
   
   # valid date.announced
