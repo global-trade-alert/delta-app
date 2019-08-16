@@ -93,8 +93,8 @@ gta_delta_add_state_act=function(
   }
   
   # author
-  if(!author %in% c(gta_sql_get_value("SELECT DISTINCT `user_login` FROM `gta_user_log`")$user.login,
-                    gta_sql_get_value("SELECT DISTINCT `user_id` FROM `gta_user_log`")$user.id)){
+  if(!author %in% c(gta_sql_get_value("SELECT DISTINCT `user_login` FROM `gta_user_log`"),
+                    gta_sql_get_value("SELECT DISTINCT `user_id` FROM `gta_user_log`"))){
     stop("Author identification is invalid, please enter either your login name (firstname.surname), or your user identification number")
   }
   
@@ -109,27 +109,27 @@ gta_delta_add_state_act=function(
   #   rm(query)
   
   # intervention.type
-  if(!all(intervention.type %in% c(gta_sql_get_value("SELECT DISTINCT `intervention_type_id` FROM `gta_intervention_type_list`")$intervention.type.id,
-                                   gta_sql_get_value("SELECT DISTINCT `intervention_type` FROM `gta_intervention_type_list`")$intervention.type))){
+  if(!all(intervention.type %in% c(gta_sql_get_value("SELECT DISTINCT `intervention_type_id` FROM `gta_intervention_type_list`"),
+                                   gta_sql_get_value("SELECT DISTINCT `intervention_type` FROM `gta_intervention_type_list`")))){
     stop(paste0("Either the id number or the full name are permissibles values for intervention types: ",
-                paste(gta_sql_get_value("SELECT DISTINCT `intervention_type` FROM `gta_intervention_type_list`")$intervention.type,collapse='; ')
+                paste(gta_sql_get_value("SELECT DISTINCT `intervention_type` FROM `gta_intervention_type_list`"),collapse='; ')
     ))
   }
   
   # affected.flow
-  if(!all(affected.flow %in% c(gta_sql_get_value("SELECT DISTINCT `affected_flow_id` FROM `gta_affected_flow_list`")$affected.flow.id,
-                    gta_sql_get_value("SELECT DISTINCT `affected_flow` FROM `gta_affected_flow_list`")$affected.flow))){
+  if(!all(affected.flow %in% c(gta_sql_get_value("SELECT DISTINCT `affected_flow_id` FROM `gta_affected_flow_list`"),
+                    gta_sql_get_value("SELECT DISTINCT `affected_flow` FROM `gta_affected_flow_list`")))){
     stop(paste0("Either the id or the full name are permissibles for affected.flows: ",
-                paste(gta_sql_get_value("SELECT DISTINCT `affected_flow_id` FROM `gta_affected_flow_list`")$affected.flow.id,collapse='; '),
+                paste(gta_sql_get_value("SELECT DISTINCT `affected_flow_id` FROM `gta_affected_flow_list`"),collapse='; '),
                 'or',
-                paste(gta_sql_get_value("SELECT DISTINCT `affected_flow` FROM `gta_affected_flow_list`")$affected.flow,collapse='; '),
+                paste(gta_sql_get_value("SELECT DISTINCT `affected_flow` FROM `gta_affected_flow_list`"),collapse='; '),
                 'respectively.'
                 ))
   }
   
   # implementing jurisdiction
-  if(!all(implementing.jurisdiction %in% c(gta_sql_get_value("SELECT DISTINCT `un_code` FROM `gta_jurisdiction_list`")$un.code,
-                                   gta_sql_get_value("SELECT DISTINCT `name` FROM `gta_jurisdiction_list`")$name))){
+  if(!all(implementing.jurisdiction %in% c(gta_sql_get_value("SELECT DISTINCT `un_code` FROM `gta_jurisdiction_list`"),
+                                   gta_sql_get_value("SELECT DISTINCT `name` FROM `gta_jurisdiction_list`")))){
     stop("Please enter the implementing.jurisdiction's un_code or it's name")
   }
   
@@ -150,23 +150,23 @@ gta_delta_add_state_act=function(
   }
   
   # implementation.level
-  if(!all(implementation.level %in% c(gta_sql_get_value("SELECT DISTINCT `gta_implementation_level_id` FROM `gta_implementation_level_list`")$gta.implementation.level.id,
-                               gta_sql_get_value("SELECT DISTINCT `gta_implementation_level_name` FROM `gta_implementation_level_list`")$gta.implementation.level.name))){
+  if(!all(implementation.level %in% c(gta_sql_get_value("SELECT DISTINCT `gta_implementation_level_id` FROM `gta_implementation_level_list`"),
+                               gta_sql_get_value("SELECT DISTINCT `gta_implementation_level_name` FROM `gta_implementation_level_list`")))){
     stop(paste0("Either the id or the full name are permissibles for affected.flows: ",
-                paste(gta_sql_get_value("SELECT DISTINCT `gta_implementation_level_id` FROM `gta_implementation_level_list`")$gta.implementation.level.id,collapse='; '),
+                paste(gta_sql_get_value("SELECT DISTINCT `gta_implementation_level_id` FROM `gta_implementation_level_list`"),collapse='; '),
                 'or',
-                paste(gta_sql_get_value("SELECT DISTINCT `gta_implementation_level_name` FROM `gta_implementation_level_list`")$gta.implementation.level.name,collapse='; '),
+                paste(gta_sql_get_value("SELECT DISTINCT `gta_implementation_level_name` FROM `gta_implementation_level_list`"),collapse='; '),
                 'respectively.'
     ))
   }
   
   # eligible.firms
-  if(!all(eligible.firms.name %in% c(gta_sql_get_value("SELECT DISTINCT `eligible_firms_id` FROM `gta_eligible_firms_list`")$eligible.firms.id,
-                                     gta_sql_get_value("SELECT DISTINCT `eligible_firms_name` FROM `gta_eligible_firms_list`")$eligible.firms.name))){
+  if(!all(eligible.firms.name %in% c(gta_sql_get_value("SELECT DISTINCT `eligible_firms_id` FROM `gta_eligible_firms_list`"),
+                                     gta_sql_get_value("SELECT DISTINCT `eligible_firms_name` FROM `gta_eligible_firms_list`")))){
     stop(paste0("Either the id or the full name are permissibles for eligible.firms: ",
-                paste(gta_sql_get_value("SELECT DISTINCT `eligible_firms_id` FROM `gta_eligible_firms_list`")$eligible.firms.id,collapse='; '),
+                paste(gta_sql_get_value("SELECT DISTINCT `eligible_firms_id` FROM `gta_eligible_firms_list`"),collapse='; '),
                 'or',
-                paste(gta_sql_get_value("SELECT DISTINCT `eligible_firms_name` FROM `gta_eligible_firms_list`")$eligible.firms.name,collapse='; '),
+                paste(gta_sql_get_value("SELECT DISTINCT `eligible_firms_name` FROM `gta_eligible_firms_list`"),collapse='; '),
                 'respectively.'
     ))
   }
@@ -177,8 +177,8 @@ gta_delta_add_state_act=function(
   } 
   
   # affected.code.type
-  if(!all(affected.code.type %in% c(gta_sql_get_value("SELECT DISTINCT `code_type_id` FROM `delta_code_type_list`")$code.type.id,
-                                    gta_sql_get_value("SELECT DISTINCT `code_type_name` FROM `delta_code_type_list`")$code.type.name))){
+  if(!all(affected.code.type %in% c(gta_sql_get_value("SELECT DISTINCT `code_type_id` FROM `delta_code_type_list`"),
+                                    gta_sql_get_value("SELECT DISTINCT `code_type_name` FROM `delta_code_type_list`")))){
     stop("Please enter the affected.code.type's name or its id: 1 or hs; 2 or cpc")
   }
 
@@ -207,10 +207,16 @@ gta_delta_add_state_act=function(
     
     for(code in subset(df.affected.code, affected.code.type=='hs')$affected.code){
       if(is.null(gta_hs_code_check(code))){
-        stop(paste0('The following code returned no values: ', code))
+        stop(paste0('The following hs code returned no values: ', code))
       }
     }
     
+    for(code in subset(df.affected.code, affected.code.type=='cpc')$affected.code){
+      if(is.null(gta_hs_code_check(code))){
+        stop(paste0('The following cpc code returned no values: ', code))
+      } 
+    }
+  }
   #  coarse.idx=which(nchar(df.affected.code$affected.code) < 6 & df.affected.code$affected.code.type=='hs')
   # 
   #   coarse.code.update=data.frame(coarse.code=df.affected.code$affected.code[coarse.idx],
@@ -220,7 +226,7 @@ gta_delta_add_state_act=function(
   #   rm(coarse.idx)
   # } else {
   #   coarse.code.update=data.frame()
-  }
+
   
   # df.affected.code$affected.code=str_sub(df.affected.code$affected.code,1,6)
   
@@ -249,10 +255,10 @@ gta_delta_add_state_act=function(
   }
   
   # treatment.unit
-  if(!all(treatment.unit %in% c(gta_sql_get_value("SELECT DISTINCT `level_unit_id` FROM `gta_unit_list`")$level.unit.id,
-                                gta_sql_get_value("SELECT DISTINCT `level_unit` FROM `gta_unit_list`")$level.unit))){
+  if(!all(treatment.unit %in% c(gta_sql_get_value("SELECT DISTINCT `level_unit_id` FROM `gta_unit_list`"),
+                                gta_sql_get_value("SELECT DISTINCT `level_unit` FROM `gta_unit_list`")))){
     stop("Permissible values for treatment.unit are unit ids, or their names: ", 
-         paste(gta_sql_get_value("SELECT DISTINCT `level_unit` FROM `gta_unit_list`")$level.unit, collapse='; '))
+         paste(gta_sql_get_value("SELECT DISTINCT `level_unit` FROM `gta_unit_list`"), collapse='; '))
   }
   
   # treatment.code.official
@@ -263,8 +269,8 @@ gta_delta_add_state_act=function(
   
   
   # affected.country
-  if(!all(affected.country %in% c(gta_sql_get_value("SELECT DISTINCT `un_code` FROM `gta_jurisdiction_list`")$un.code,
-                                   gta_sql_get_value("SELECT DISTINCT `name` FROM `gta_jurisdiction_list`")$name))){
+  if(!all(affected.country %in% c(gta_sql_get_value("SELECT DISTINCT `un_code` FROM `gta_jurisdiction_list`"),
+                                   gta_sql_get_value("SELECT DISTINCT `name` FROM `gta_jurisdiction_list`")))){
     stop("Please enter the affected.country's un code or it's name")
   }
   
@@ -330,8 +336,8 @@ gta_delta_add_state_act=function(
   ## There is a new get.id parameter in gta_sql_append_table that helps you do it e.g gta_sql_append_table(get.id="regime.id")
   
   # framework,name
-  if(!all(framework.name %in% c(gta_sql_get_value("SELECT DISTINCT `framework_id` FROM `gta_framework_log`")$framework.id,
-                                  gta_sql_get_value("SELECT DISTINCT `framework_name` FROM `gta_framework_log`")$framework.name))){
+  if(!all(framework.name %in% c(gta_sql_get_value("SELECT DISTINCT `framework_id` FROM `gta_framework_log`"),
+                                  gta_sql_get_value("SELECT DISTINCT `framework_name` FROM `gta_framework_log`")))){
     stop("Please enter a valid framework(regime) name or id")
   }
   
@@ -352,4 +358,5 @@ gta_delta_add_state_act=function(
   # } 
   
   print("All parameters are well entered!")
-}
+  }
+  
