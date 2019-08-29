@@ -34,8 +34,8 @@ ui <- fluidPage(
                                                        )))),
                              tags$div(class="settings-bottom",
                                       # tags$div(class="scroll",
-                                               fluidRow(
-                                               column(width=12,
+                                      fluidRow(
+                                        column(width=12,
                                                tags$div(class="suggestions",
                                                         textAreaInput("hs.codes",
                                                                       label = "HS code input (csv).",
@@ -43,33 +43,43 @@ ui <- fluidPage(
                                                                       width = '395px',
                                                                       rows = 2)),
                                                column(width=6,
-                                               fluidRow(        
-                                               tags$div(class="suggestions",
-                                                        pickerInput("implementing.jurisdiction",
-                                                                    "implementer",
-                                                                    choices = c('Any',
-                                                                                as.character(unique(country.names$name))),
-                                                                    selected = as.character(unique(country.names$name))[9],
-                                                                    options = list(`actions-box` = TRUE))))),
+                                                      fluidRow(        
+                                                        tags$div(class="suggestions",
+                                                                 pickerInput("implementing.jurisdiction",
+                                                                             "implementer",
+                                                                             choices = c('Any',
+                                                                                         as.character(unique(country.names$name))),
+                                                                             selected = as.character(unique(country.names$name))[9],
+                                                                             options = list(`actions-box` = TRUE))))),
                                                column(width=6,
-                                               fluidRow(        
+                                                      fluidRow(        
                                                         
-                                               tags$div(class="suggestions",
-                                                        pickerInput("affected.jurisdiction",
-                                                                    "affected",
-                                                                    choices = c('Any',
-                                                                                as.character(unique(country.names$name))),
-                                                                    selected = 'Any',
-                                                                    options = list(`actions-box` = TRUE),
-                                                                    multiple =T)))),
+                                                        tags$div(class="suggestions",
+                                                                 pickerInput("affected.jurisdiction",
+                                                                             "affected",
+                                                                             choices = c('Any',
+                                                                                         as.character(unique(country.names$name))),
+                                                                             selected = 'Any',
+                                                                             options = list(`actions-box` = TRUE),
+                                                                             multiple =T)))),
                                                column(width=12,
-                                               fluidRow(        
-                                               tags$div(class="suggestions",
-                                                        dateInput("end.date",
-                                                                  "End date",
-                                                                  format='yyyy-mm-dd',
-                                                                  value='2016-02-01',
-                                                                  width='165px')))))
+                                                      fluidRow(        
+                                                        tags$div(class="suggestions",
+                                                                 dateInput("end.date",
+                                                                           "End date",
+                                                                           format='yyyy-mm-dd',
+                                                                           value='2016-02-01',
+                                                                           width='165px'))),
+                                                      column(width=12,
+                                                             fluidRow(
+                                                               tags$div(class="suggestions",
+                                                                        fileInput('excel.query', 'Choose xlsx file',
+                                                                                  accept = c(".xlsx"))
+                                                                        
+                                                               ))
+                                                      ),
+                                                      hidden(actionButton('clear.xlsx', 'Clear xlsx input'))
+                                               ))
                                       )),
                              
                              tags$div(class="continue-button",
@@ -83,6 +93,7 @@ ui <- fluidPage(
            
            tags$div(class="content",
                     tags$div(class="results",
+                             useShinyalert(),
                              uiOutput('display')
                     )
            )
