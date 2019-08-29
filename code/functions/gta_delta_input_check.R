@@ -294,15 +294,15 @@ gta_delta_input_check=function(
   # also, please expand all HS codes with less than 6-digits
   ######## and/or cpc codes with less than 3-digit: We decided only 3 digits allowed as entry
   # After this section, affected.code should only include the correct HS/CPC digit length (6/3)
-  
-  hs.nomatch=NULL
-  for(code in subset(df.affected.code, affected.code.type=='hs')$affected.code){
-    if(is.null(gta_hs_code_check(code))){
-      fatal=T
-      new.error=T
-      hs.nomatch=c(hs.nomatch,code)
-    }
+
+  hs.codes=subset(df.affected.code, affected.code.type=='hs')$affected.code
+  if(is.null(gta_hs_code_check(hs.codes))){
+    fatal=T
+    error.msg <- capture.output({
+      gta_hs_code_check(hs.codes)
+    })
   }  
+  
   if(new.error==T){
     error=paste0('The following hs code(s) returned no match: ', 
                  paste(unique(hs.nomatch),collapse='; '),
