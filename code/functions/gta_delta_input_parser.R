@@ -1,23 +1,11 @@
 ## This function parses input data into state acts & interventions.
 
 gta_delta_input_parser=function(
+  delta.data,
   input.name=NULL,
   user.id=NULL,
   db.connection="pool"
 ){
-  
-  # intialise
-  path=paste("17 Shiny/6 delta app/data/delta input - ",input.name,".Rdata", sep="")
-
-  
-  ## assign IDs to checked data here
-  
-  load("17 Shiny/6 delta app/data/delta data sample.Rdata")
-  
-  delta.data=delta.data[1:1000000,]
-  delta.data$announced.as.temporary=F
-  data.table::setnames(delta.data, "treatment.code.type.id","treatment.code.type")
-  
   ## Check for having all variables
   necessary.variables=c("implementing.jurisdiction.id", "treatment.value", "treatment.code", 
                         "date.announced","date.implemented","announced.as.temporary", "treatment.unit.id",
