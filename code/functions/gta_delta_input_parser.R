@@ -6,6 +6,11 @@ gta_delta_input_parser=function(
   user.id=NULL,
   db.connection="pool"
 ){
+  
+  library(gtasql)
+  library(gtalibrary)
+  library(data.table)
+  
   ## Check for having all variables
   necessary.variables=c("implementing.jurisdiction.id", "treatment.value", "treatment.code", 
                         "date.announced","date.implemented","announced.as.temporary", "treatment.unit.id",
