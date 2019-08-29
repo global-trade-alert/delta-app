@@ -23,7 +23,8 @@ gta_delta_source_id(source.description=NULL,
     
     this.source.id=gta_sql_append_table(append.table = "source.log",
                                         append.by.df = "source.log.update",
-                                        get.id = "source.id")
+                                        get.id = "source.id",
+                                        db.connection=db.connection)
     
     rm(source.log.update)
     
