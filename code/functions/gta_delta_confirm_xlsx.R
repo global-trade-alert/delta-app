@@ -61,7 +61,7 @@ gta_delta_confirm_xlsx=function(xlsx.input){
       fatal=F
       length.error=paste0('The following optional columns are empty: ',
                           paste(names(incomplete.vec), collapse = '; '),
-                          '. Please ensure this is intended!')
+                          '. Please ensure this is intended.')
     }
     
   } else {length.error=NULL}
