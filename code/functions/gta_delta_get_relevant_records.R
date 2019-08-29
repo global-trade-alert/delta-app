@@ -2,7 +2,7 @@ gta_delta_get_relevant_records=function(implementer.id=NULL,
                                         treatment.area=NULL,
                                         affected.flow.id=NULL,
                                         treatment.code=NULL,
-                                        treatment.code.type.id=NULL,
+                                        treatment.code.type=NULL,
                                         affected.country.id=NULL,
                                         excl.mfn=F,
                                         excl.prolongation=F,
@@ -20,7 +20,7 @@ gta_delta_get_relevant_records=function(implementer.id=NULL,
   link.treatment.area=treatment.area
   link.flow=affected.flow.id
   link.code=treatment.code
-  link.code.type=treatment.code.type.id
+  link.code.type=treatment.code.type
   link.country=affected.country.id
   
   
