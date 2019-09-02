@@ -48,78 +48,81 @@ gta_delta_get_relevant_records=function(implementer.id=NULL,
                                              link.treatment.area=link.treatment.area,
                                              link.affected.flow.id=link.flow,
                                              link.code=link.code,
-                                             link.code.type.id=link.code.type,
+                                             link.code.type=link.code.type,
                                              link.affected.country.id=link.country,
                                              db.connection=db.connection)
   
   
   #### PROCESSING THE REMOTE DATA
-  
-  ## Excluding MFN entries, if called for
-  if(is.null(link.affected.country.id)==F  & excl.mfn){
-    link.remote.data=subset(link.remote.data, is.mfn==F)
+  if(nrow(link.remote.data)>0){
+    ## Excluding MFN entries, if called for
+    if(is.null(link.affected.country.id)==F  & excl.mfn){
+      link.remote.data=subset(link.remote.data, is.mfn==F)
+    }
+    
+    ## Excluding prolongations, if called for
+    if(excl.prolongation){
+      link.remote.data=subset(link.remote.data, is.intervention==T)
+    }
+    
+    ## Restricting time series, if called for
+    if(is.null(cut.off.date)==F & nrow(link.remote.data)>0){
+      
+      link.cut.base=link.remote.data
+      link.cut.base$distance=link.cut.base$date.implemented - cut.off.date
+      
+      link.remote.data=data.frame()
+      
+      if(incl.prior.record){
+        
+        lrd.cut=subset(link.cut.base, distance<0)
+        
+        if(nrow(lrd.cut)>0){
+          link.remote.data=rbind(link.remote.data,
+                                 subset(lrd.cut, distance==max(lrd.cut$distance)))
+        } 
+        
+        rm(lrd.cut)
+        
+      }
+      
+      if(incl.same.date.record){
+        
+        lrd.cut=subset(link.cut.base, distance==0)
+        
+        if(nrow(lrd.cut)>0){
+          link.remote.data=rbind(link.remote.data,
+                                 lrd.cut)
+        } 
+        
+        rm(lrd.cut)
+        
+      }
+      
+      
+      if(incl.subsequent.record){
+        
+        lrd.cut=subset(link.cut.base, distance>0)
+        
+        if(nrow(lrd.cut)>0){
+          link.remote.data=rbind(link.remote.data,
+                                 subset(lrd.cut, distance==min(lrd.cut$distance)))
+        } 
+        
+        rm(lrd.cut)
+        
+      }
+      
+      if(nrow(link.remote.data)>0){
+        link.remote.data$distance=NULL
+      }
+      
+      rm(link.cut.base)
+      
+    }
+    
   }
-  
-  ## Excluding prolongations, if called for
-  if(excl.prolongation){
-    link.remote.data=subset(link.remote.data, is.intervention==T)
-  }
-  
-  ## Restricting time series, if called for
-  if(is.null(cut.off.date)==F & nrow(link.remote.data)>0){
-    
-    link.cut.base=link.remote.data
-    link.cut.base$distance=link.cut.base$date.implemented - cut.off.date
-    
-    link.remote.data=data.frame()
-    
-    if(incl.prior.record){
-      
-      lrd.cut=subset(link.cut.base, distance<0)
-      
-      if(nrow(lrd.cut)>0){
-        link.remote.data=rbind(link.remote.data,
-                               subset(lrd.cut, distance==max(lrd.cut$distance)))
-      } 
-      
-      rm(lrd.cut)
-      
-    }
-    
-    if(incl.same.date.record){
-      
-      lrd.cut=subset(link.cut.base, distance==0)
-      
-      if(nrow(lrd.cut)>0){
-        link.remote.data=rbind(link.remote.data,
-                               lrd.cut)
-      } 
-      
-      rm(lrd.cut)
-      
-    }
-    
-    
-    if(incl.subsequent.record){
-      
-      lrd.cut=subset(link.cut.base, distance>0)
-      
-      if(nrow(lrd.cut)>0){
-        link.remote.data=rbind(link.remote.data,
-                               subset(lrd.cut, distance==min(lrd.cut$distance)))
-      } 
-      
-      rm(lrd.cut)
-      
-    }
-    
-    if(nrow(link.remote.data)>0){
-      link.remote.data$distance=NULL
-    }
-    
-    rm(link.cut.base)
-    
-  }
+
   
   return(link.remote.data)
   

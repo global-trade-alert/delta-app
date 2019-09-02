@@ -12,14 +12,13 @@ gta_delta_input_parser=function(
   library(data.table)
   
   ## Check for having all variables
-  necessary.variables=c("implementing.jurisdiction.id", "treatment.value", "treatment.code", 
-                        "date.announced","date.implemented","announced.as.temporary", "treatment.unit.id",
+  necessary.variables=c("implementing.jurisdiction", "treatment.value", "treatment.code", 
+                        "date.announced","date.implemented", "announced.removal.date", "treatment.unit.id",
                         "treatment.code.official", "treatment.area", "treatment.code.type",
                         "intervention.type.id", "state.act.source", "is.source.official", 
                         "author.id", "affected.flow.id", "implementation.level.id",
                         "eligible.firms.id","implementer.end.date","treatment.code.end.date", 
-                        "nonmfn.affected.id","nonmfn.affected.end.date", "framework.id",
-                        "framework.new.to.db")
+                        "nonmfn.affected","nonmfn.affected.end.date", "framework.id")
   
   
   got.all.vars=setdiff(necessary.variables, names(delta.data))
@@ -31,7 +30,7 @@ gta_delta_input_parser=function(
   
   ############ PARSER
   ## creating input ID
-  if(is.null(input.name)|is.null(user.id)|length(input.name)>0|length(user.id)>0){
+  if(is.null(input.name)|is.null(user.id)|length(input.name)>1|length(user.id)>1){
     
     stop("Please assign 1 input name and specify 1 user ID.")
     
@@ -50,7 +49,7 @@ gta_delta_input_parser=function(
     
     if(is.na(this.input.id)){
       
-      input.log.update=data.frame(user.id=user.id,
+      input.log.update<<-data.frame(user.id=user.id,
                                   input.date=Sys.Date(),
                                   input.name=input.name,
                                   stringsAsFactors = F)
@@ -64,6 +63,77 @@ gta_delta_input_parser=function(
     
   }
   
+  ## expanding coarse.codes
+  delta.data$coarse.code=NA
+  delta.data$coarse.code.type=NA
+  
+  coarse=subset(delta.data, (nchar(delta.data$treatment.code) < 5 & delta.data$treatment.code.type=='hs'))
+  
+  if(nrow(coarse)>0){
+    
+    coarse$processing.id=1:nrow(coarse)
+    
+    expanded.output=data.frame()
+    for(i in 1:nrow(coarse)){
+      expanded.codes=gta_hs_code_check(coarse$treatment.code[i])
+      expanded.output=rbind(expanded.output,
+                            data.frame(processing.id=coarse$processing.id[i],
+                                       treatment.code=as.double(expanded.codes),
+                                       coarse.code=coarse$treatment.code[i],
+                                       coarse.code.type="hs"))
+    }
+    
+    coarse$treatment.code=NULL
+    coarse$coarse.code=NA
+    coarse$coarse.code.type=NA
+    coarse=merge(coarse, expanded.output, by="processing.id", all.x=T)
+    
+    delta.data=rbind(subset(delta.data, !(nchar(delta.data$treatment.code) < 5 & delta.data$treatment.code.type=='hs')),
+                     expanded.output)
+    
+    rm(expanded.output, expanded.codes)
+    
+  }
+  rm(coarse)
+  
+  
+  ## adding jurisdiction.ids
+  
+  #### Implementers
+  implementer.ids=gta_delta_get_jurisdiction_id(jurisdiction.name=unique(delta.data$implementing.jurisdiction),
+                                                db.connection=db.connection)
+  
+  names(implementer.ids)=c("implementing.jurisdiction.id","implementing.jurisdiction")
+  
+  delta.data=merge(delta.data, implementer.ids, by="implementing.jurisdiction", all.x=T)
+  
+  rm(implementer.ids)
+  
+  #### Affected jurisdictions
+  delta.data$nonmfn.affected.id=NA
+  got.aj=subset(delta.data, is.na(nonmfn.affected)==F)
+  
+  if(nrow(got.aj)>0){
+    
+    got.aj$nonmfn.affected.id=NULL
+    affected.ids=gta_delta_get_jurisdiction_id(jurisdiction.name=unique(got.aj$nonmfn.affected),
+                                                  db.connection=db.connection)
+    
+    names(affected.ids)=c("nonmfn.affected.id","nonmfn.affected")
+    
+    got.aj=merge(got.aj, affected.ids, by="nonmfn.affected", all.x=T)
+    
+    delta.data=rbind(subset(delta.data, is.na(nonmfn.affected)),
+                     got.aj)
+    
+    rm(affected.ids)
+    
+  } else {
+    
+  }
+  rm(got.aj)
+
+  
 
   
   ## checking the linkages
@@ -74,8 +144,9 @@ gta_delta_input_parser=function(
   delta.data=merge(delta.data, linkages, by=c("implementing.jurisdiction.id","affected.flow.id","treatment.code", "treatment.code.type","nonmfn.affected.id"), all.x=T)
   
   ## now have to compare the local and the database values for date.implemented-treatment.value-treatement.unit.type.id for each linkage
+  added.recs=0
   for(link in unique(linkages$linkage.id)){
-    # link=-26025
+    # link=-456
     
     ## generating list of local announcements for this link
     link.local.data=subset(delta.data, linkage.id==link)[,c("implementing.jurisdiction.id","affected.flow.id","treatment.code", "treatment.code.type","nonmfn.affected.id", "treatment.area","date.implemented", "treatment.value" , "treatment.unit.id")]
@@ -137,7 +208,7 @@ gta_delta_input_parser=function(
                 local.overlap=merge(local.overlap, subset(delta.data, linkage.id==link)[,c(local.vars,"treatment.code.official")], by=local.vars,
                                   all.x=T)
                 
-                input.discrepancy.log.update=data.frame(input.id=this.input.id,
+                input.discrepancy.log.update<<-data.frame(input.id=this.input.id,
                                                         record.id=remote.overlap$record.id,	
                                                         discrepancy.date=common.date,	
                                                         discrepancy.value=local.overlap$treatment.value,	
@@ -146,7 +217,7 @@ gta_delta_input_parser=function(
                                                         discrepancy.source.id=this.source.id,
                                                         stringsAsFactors = F)
                 
-                this.source.id=gta_sql_append_table(append.table = "input.discrepancy.log",
+                gta_sql_append_table(append.table = "input.discrepancy.log",
                                                     append.by.df = "input.discrepancy.log.update",
                                                     db.connection=db.connection)
                 
@@ -172,7 +243,7 @@ gta_delta_input_parser=function(
         upload.data=merge(link.local.data, subset(delta.data, linkage.id==link), by=names(link.local.data)[names(link.local.data) %in% names(delta.data)],
                           all.x=T)
         
-        if(is.na(this.linkage.id)==F){
+        if(is.null(this.linkage.id)==F){
           upload.data$linkage.id=this.linkage.id
         }
         
@@ -182,13 +253,12 @@ gta_delta_input_parser=function(
                                db.connection=db.connection)
         rm(upload.data)
         
-        
+        added.recs=added.recs+1
+        print(paste("Number of added records:", added.recs))
         }
       }
     }
   
-  return(path)
-  
-  
+  print("Data import complete.")
 }  
 

@@ -1,4 +1,4 @@
-gta_delta_source_id(source.description=NULL,
+gta_delta_source_id=function(source.description=NULL,
                     source.official=NULL,
                     create.source=F,
                     db.connection=db.connection){
@@ -11,13 +11,13 @@ gta_delta_source_id(source.description=NULL,
   query=paste("SELECT source_id 
               FROM delta_source_log 
               WHERE state_act_source='",
-              source.description,"';")
+              source.description,"';", sep="")
   
   this.source.id=gta_sql_get_value(query)
   
   if(is.na(this.source.id) & create.source==T){
     
-    source.log.update=data.frame(state.act.source=source.description,	
+    source.log.update<<-data.frame(state.act.source=source.description,	
                                  is.source.official=source.official,
                                  stringsAsFactors = F)
     

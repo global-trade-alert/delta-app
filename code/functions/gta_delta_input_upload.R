@@ -1,5 +1,5 @@
 
-gta_delta_input_uploader=function(send.to.remote,
+gta_delta_input_upload=function(send.to.remote,
                                   input.id=NULL,
                                   input.name=NULL,
                                   db.connection="pool"){
@@ -12,22 +12,22 @@ gta_delta_input_uploader=function(send.to.remote,
   }
   
   ## load data
-  new.data=send.to.remote
+  upload.data=send.to.remote
   
   ## NO linkage in current db
-  if(unique(new.data$linkage.id)<0){
+  if(unique(upload.data$linkage.id)<0){
     
     
-    if(is.na(unique(new.data$nonmfn.affected.id))){
-      aj="MFN"
+    if(is.na(unique(upload.data$nonmfn.affected.id))){
+      aj=NA
     } else {
-      aj=unique(new.data$nonmfn.affected.id)
+      aj=unique(upload.data$nonmfn.affected.id)
     }
     
-    linkage.log.update=data.frame(linkage.implementer.id=unique(new.data$implementing.jurisdiction.id),
-                                  linkage.affected.flow.id=unique(new.data$affected.flow.id),
-                                  linkage.code=unique(new.data$treatment.code),
-                                  linkage.code.type.id=unique(new.data$treatment.code.type.id),
+    linkage.log.update<<-data.frame(linkage.implementer.id=unique(upload.data$implementing.jurisdiction.id),
+                                  linkage.affected.flow.id=unique(upload.data$affected.flow.id),
+                                  linkage.code=unique(upload.data$treatment.code),
+                                  linkage.code.type=unique(upload.data$treatment.code.type),
                                   linkage.affected.country.id=aj,
                                   stringsAsFactors = F)
     
@@ -38,10 +38,10 @@ gta_delta_input_uploader=function(send.to.remote,
     
     rm(aj)
     
-    new.data$linkage.id=this.linkage.id
+    upload.data$linkage.id=this.linkage.id
     
   } else {
-    this.linkage.id=unique(new.data$linkage.id)
+    this.linkage.id=unique(upload.data$linkage.id)
   }
   
   
@@ -59,8 +59,11 @@ gta_delta_input_uploader=function(send.to.remote,
       upload.this.date=subset(upload.this, date.announced==as.Date(as.numeric(date), origin="1970-01-01"))
       
       for(int.type.id in unique(upload.this$intervention.type.id)){
+        # upload.this.type=upload.data
+        # int.type.id=upload.data$intervention.type.id
+        # date=upload.this.type$date.announced
         
-        upload.this.type=subset(upload.this.date, intervention.type.id=int.type.id)
+        upload.this.type=subset(upload.this.date, intervention.type.id==int.type.id)
         
         ## is there a record already?
         
@@ -71,20 +74,25 @@ gta_delta_input_uploader=function(send.to.remote,
                                            db.connection=db.connection)
         
         # get treatment.area.id
-        query=paste("SELECT treatment_area_id 
-                    FROM delta_treatment_area_list 
-                    WHERE treatment_area_name = '",
-                    upload.this.type$treatment.area,"';")
+        ## BUG BUG BUG BUG, manual override
+        # query=paste("SELECT treatment_area_id 
+        #             FROM delta_treatment_area_list 
+        #             WHERE treatment_area_name = '",
+        #             upload.this.type$treatment.area,"';", sep="")
+        # 
+        # print(upload.this.type)
+        # this.area.id=gta_sql_get_value(query=query,
+        #                                db.connection=db.connection)
+        # rm(query)
         
-        this.area.id=gta_sql_get_value(query=query,
-                                       db.connection=db.connection)
-        rm(query)
+        this.area.id=1
         
+     
         if(is.na(this.area.id)){stop("Treatment area could not be identified.")}
         
         
         #### record.log
-        record.query=paste("SELECT record_id 
+        record.query=paste("SELECT reclog.record_id 
                            FROM delta_record_log reclog
                            JOIN delta_record_linkage reclink
                            ON reclog.record_id = reclink.record_id
@@ -98,26 +106,27 @@ gta_delta_input_uploader=function(send.to.remote,
         
         this.record.id=gta_sql_get_value(query=record.query,
                                          db.connection=db.connection)
+        
         rm(record.query)
         
         if(is.na(this.record.id)){
           ## If there is not: create new records in the relevant sheets
 
-          record.log.update=data.frame(intervention.type.id=int.type.id,
+          record.log.update<<-data.frame(intervention.type.id=int.type.id,
                                        affected.flow.id=upload.this.type$affected.flow.id,
                                        implementation.level.id=upload.this.type$implementation.level.id ,
                                        eligible.firms.id=upload.this.type$eligible.firms.id ,
                                        is.mfn=is.na(upload.this.type$nonmfn.affected.id),
                                        source.id=this.source.id,
                                        record.date.created=Sys.Date(),
-                                       recprd.date.announced=as.Date(as.numeric(date), origin="1970-01-01"),
+                                       record.date.announced=as.Date(as.numeric(date), origin="1970-01-01"),
                                        stringsAsFactors = F)
+          print(record.log.update)
           
-          this.record.id=gta_sql_append_table(append.table = "record.log",
+          this.record.id<<-gta_sql_append_table(append.table = "record.log",
                                               append.by.df = "record.log.update",
                                               get.id = "record.id",
                                               db.connection=db.connection)
-          
           
           rm(record.log.update)
         } 
@@ -133,8 +142,8 @@ gta_delta_input_uploader=function(send.to.remote,
         
         if(is.na(got.rec.link)){
         
-          record.linkage.update=data.frame(record.id=this.record.id,
-                                           linkage.id=upload.this.type$linkage.id,
+          record.linkage.update<<-data.frame(record.id=this.record.id,
+                                           linkage.id=this.linkage.id,
                                            stringsAsFactors = F)
           
           gta_sql_append_table(append.table = "record.linkage",
@@ -157,7 +166,7 @@ gta_delta_input_uploader=function(send.to.remote,
         
         if(is.na(got.rec.area)){
           
-          record.area.update=data.frame(record.id=this.record.id,
+          record.area.update<<-data.frame(record.id=this.record.id,
                                         treatment.area.id=this.area.id,
                                         stringsAsFactors = F)
           
@@ -184,7 +193,7 @@ gta_delta_input_uploader=function(send.to.remote,
         
         if(is.na(got.rec.imp)){
           
-          record.imp.update=data.frame(record.id=this.record.id,
+          record.imp.update<<-data.frame(record.id=this.record.id,
                                        implementing.jurisdiction.id=upload.this.type$implementing.jurisdiction.id,
                                        stringsAsFactors = F)
           
@@ -211,11 +220,11 @@ gta_delta_input_uploader=function(send.to.remote,
         
         if(is.na(got.rec.src)){
           
-          record.src.update=data.frame(record.id=this.record.id,
+          record.src.update<<-data.frame(record.id=this.record.id,
                                        source.id=this.source.id,
                                        stringsAsFactors = F)
           
-          this.record.id=gta_sql_append_table(append.table = "record.source",
+          gta_sql_append_table(append.table = "record.source",
                                               append.by.df = "record.src.update",
                                               db.connection=db.connection)
           
@@ -252,12 +261,20 @@ gta_delta_input_uploader=function(send.to.remote,
         } else {
           is.int=T
         }
-        
-        rm(link.remote.data)
+      
+        ## announced as temporary
+        if(any(c(is.na(upload.this.type$announced.removal.date),
+                 is.na(upload.this.type$implementer.end.date),
+                 is.na(upload.this.type$nonmfn.affected.end.date),
+                 is.na(upload.this.type$treatment.code.end.date))==F)){
+          this.is.temporary=T
+        } else {
+          this.is.temporary=F
+        }
         
         
         # update treatment.log
-        record.treatment.update=data.frame(record.id=this.record.id,
+        record.treatment.update<<-data.frame(record.id=this.record.id,
                                            date.implemented=upload.this.type$date.implemented,
                                            treatment.code=upload.this.type$treatment.code,
                                            treatment.code.type=upload.this.type$treatment.code.type,
@@ -266,7 +283,7 @@ gta_delta_input_uploader=function(send.to.remote,
                                            treatment.code.official=upload.this.type$treatment.code.official,
                                            is.intervention=is.int,
                                            was.enforced=T,
-                                           announced.as.temporary=upload.this.type$announced.as.temporary,
+                                           announced.as.temporary=this.is.temporary,
                                            stringsAsFactors = F)
         
         gta_sql_append_table(append.table = paste(upload.this.type$treatment.area,".log",sep=""),
@@ -274,9 +291,46 @@ gta_delta_input_uploader=function(send.to.remote,
                              db.connection=db.connection)
         
         rm(record.treatment.update)
+
+        ## adding the removal date on an MFN announcement
         
+        if(is.na(upload.this.type$announced.removal.date)==F){
+          
+          if(nrow(link.remote.data)>0){
+            # re-instating the prior status using link.remote.data
+            record.treatment.update<<-data.frame(record.id=this.record.id,
+                                               date.implemented=upload.this.type$announced.removal.date,
+                                               treatment.code=upload.this.type$treatment.code,
+                                               treatment.code.type=upload.this.type$treatment.code.type,
+                                               treatment.value=link.remote.data$treatment.value,
+                                               treatment.unit.id=link.remote.data$treatment.unit.id,
+                                               treatment.code.official=link.remote.data$treatment.code.official,
+                                               is.intervention=T,
+                                               was.enforced=T,
+                                               announced.as.temporary=F,
+                                               stringsAsFactors = F)
+            
+          } else {
+            # log a discrepancy
+            
+            input.discrepancy.log.update<<-data.frame(input.id=this.input.id,
+                                                    record.id=this.record.id,	
+                                                    discrepancy.date=upload.this.type$announced.removal.date,	
+                                                    discrepancy.value=-999,	
+                                                    discrepancy.value.unit.id=upload.this.type$treatment.unit.id,
+                                                    discrepancy.code.official=upload.this.type$treatment.code.official,
+                                                    discrepancy.source.id=this.source.id,
+                                                    stringsAsFactors = F)
+            
+            gta_sql_append_table(append.table = "input.discrepancy.log",
+                                                append.by.df = "input.discrepancy.log.update",
+                                                db.connection=db.connection)
+            
+          }
+
+        }
         
-        
+        rm(link.remote.data)
         
         ### possibly
         ## updating treatment.log is.intervention/was.enforced
@@ -320,7 +374,7 @@ gta_delta_input_uploader=function(send.to.remote,
           }
           
           ## was.enforced
-          record.query=paste("SELECT record_id, was_enforced
+          record.query=paste("SELECT treatlog.record_id, was_enforced
                              FROM delta_",upload.this.type$treatment.area,"_log treatlog
                              JOIN delta_record_log reclog
                              ON treatlog.record_id = reclog.record_id
@@ -361,7 +415,7 @@ gta_delta_input_uploader=function(send.to.remote,
         if(is.na(upload.this.type$nonmfn.affected.id)==F){
           
      
-          gta_delta_update_nonmfn_state(linkage.id=upload.this.type$linkage.id,
+          gta_delta_update_nonmfn_state(linkage.id=this.linkage.id,
                                         treatment.area=upload.this.type$treatment.area,
                                         local.start.date=upload.this.type$date.implemented,
                                         local.end.date.affected.cty=upload.this.type$nonmfn.affected.end.date,
@@ -374,14 +428,28 @@ gta_delta_input_uploader=function(send.to.remote,
         
         
         #### coarse.code.log
-        
-        
+        if(is.na(upload.this.type$coarse.code)==F){
+          
+          coarse.code.log.update<<-data.frame(record.id=this.record.id,
+                                            coarse.code=upload.this.type$coarse.code,
+                                            coarse.code.type=upload.this.type$coarse.code.type,
+                                            stringsAsFactors = F)
+          
+          gta_sql_append_table(append.table = "coarse.code.log",
+                               append.by.df = "coarse.code.log.update",
+                               db.connection=db.connection)
+          
+          rm(coarse.code.log.update)
+        }
         
         #### framework.log & record.framework
         
-        ###### framework.log
-        
-        ###### record.framework
+        if(is.na(upload.this.type$framework.id)==F){
+          ###### framework.log
+          
+          ###### record.framework
+          
+        }
         
     
         #### rollback.log
