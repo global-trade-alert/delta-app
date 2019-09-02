@@ -3,13 +3,13 @@ gta_delta_input_ids=function(
 ){
   
   #create ids for following if given as character
-  a=c("implementing.jurisdiction.id", "treatment.value", "treatment.code",
-     "date.announced","date.implemented", "treatment.unit.id",
-     "treatment.code.official", "treatment.area", "treatment.code.type.id",
-     "intervention.type.id", "state.act.source", "is.source.official",
-     "author.id", "affected.flow.id", "implementation.level.id",
-     "eligible.firms.id","implementer.end.date","treatment.code.end.date",
-     "nonmfn.affected.id","nonmfn.affected.end.date", "framework.id")
+  # a=c("implementing.jurisdiction.id", "treatment.value", "treatment.code",
+  #    "date.announced","date.implemented", "treatment.unit.id",
+  #    "treatment.code.official", "treatment.area", "treatment.code.type.id",
+  #    "intervention.type.id", "state.act.source", "is.source.official",
+  #    "author.id", "affected.flow.id", "implementation.level.id",
+  #    "eligible.firms.id","implementer.end.date","treatment.code.end.date",
+  #    "nonmfn.affected.id","nonmfn.affected.end.date", "framework.id")
   
   
   
@@ -38,15 +38,16 @@ gta_delta_input_ids=function(
   library(plyr)
   gta_sql_pool_open(table.prefix = "delta_" )
   
-  output=data.frame(processing.id=1:nrow(input.df))
+  output=data.frame(processing.id=1:nrow(input))
   
   ##implementing.jurisdiction.id
-  sql=do.call('sprintf', as.list(c("SELECT jurisdiction_id, jurisdiction_name, un_code FROM gta_jurisdiction_list WHERE (un_code IN (%s) OR lower(jurisdiction_name) IN (%s))", 
-              rep(toString(sprintf("'%s'",tolower(implementing.jurisdiction))), 2))))
-  temp=gta_sql_get_value(sql)
-  output$implementing.jurisdiction.id=mapvalues(tolower(implementing.jurisdiction),
-                                                tolower(c(temp$un.code,temp$jurisdiction.name)),
-                                                c(temp$jurisdiction.id,temp$jurisdiction.id))
+  output$implementing.jurisdiction=implementing.jurisdiction
+  # sql=do.call('sprintf', as.list(c("SELECT jurisdiction_id, jurisdiction_name, un_code FROM gta_jurisdiction_list WHERE (un_code IN (%s) OR lower(jurisdiction_name) IN (%s))", 
+  #             rep(toString(sprintf("'%s'",tolower(implementing.jurisdiction))), 2))))
+  # temp=gta_sql_get_value(sql)
+  # output$implementing.jurisdiction.id=mapvalues(tolower(implementing.jurisdiction),
+  #                                               tolower(c(temp$un.code,temp$jurisdiction.name)),
+  #                                               c(temp$jurisdiction.id,temp$jurisdiction.id))
    
   ##treatment.value
   output$treatment.value=as.numeric(treatment.value)
@@ -69,7 +70,7 @@ gta_delta_input_ids=function(
                                      temp$level.unit.id)
 
   ##treatment.code.official
-  output$treatment.code.official=as.logical(mapvalues(tolower(treatment.code.official),c('yes','no','t','f'),c('True','False','True','False')))
+  output$treatment.code.official=as.logical(mapvalues(tolower(treatment.code.official),c('yes','no','t','f','true','false'),c('True','False','True','False','True','False')))
   
   ##treatment.area
   sql=do.call('sprintf', as.list(c("SELECT * FROM delta_treatment_area_list WHERE (treatment_area_id IN (%s) OR lower(treatment_area_name) IN (%s))", 
@@ -94,7 +95,7 @@ gta_delta_input_ids=function(
   output$state.act.source=as.character(source)
   
   ##is.source.official
-  output$is.source.official=as.logical(mapvalues(tolower(source.official),c('yes','no','t','f'),c('True','False','True','False')))
+  output$is.source.official=as.logical(mapvalues(tolower(source.official),c('yes','no','t','f','true','false'),c('True','False','True','False','True','False')))
   
   ##author.id
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_user_log WHERE (lower(user_login) IN (%s) OR user_id IN (%s))", 
@@ -135,12 +136,13 @@ gta_delta_input_ids=function(
   output$treatment.code.end.date=as.Date(affected.code.end.date)
   
   ##nonmfn.affected.id
-  sql=do.call('sprintf', as.list(c("SELECT jurisdiction_id, jurisdiction_name, un_code FROM gta_jurisdiction_list WHERE (un_code IN (%s) OR lower(jurisdiction_name) IN (%s))", 
-                                   rep(toString(sprintf("'%s'",tolower(affected.country))), 2))))
-  temp=gta_sql_get_value(sql)
-  output$nonmfn.affected.id=mapvalues(tolower(affected.country),
-                                      tolower(c(temp$un.code,temp$jurisdiction.name)),
-                                      c(temp$jurisdiction.id,temp$jurisdiction.id))
+  output$nonmfn.affected.id=affected.country
+  # sql=do.call('sprintf', as.list(c("SELECT jurisdiction_id, jurisdiction_name, un_code FROM gta_jurisdiction_list WHERE (un_code IN (%s) OR lower(jurisdiction_name) IN (%s))", 
+  #                                  rep(toString(sprintf("'%s'",tolower(affected.country))), 2))))
+  # temp=gta_sql_get_value(sql)
+  # output$nonmfn.affected.id=mapvalues(tolower(affected.country),
+  #                                     tolower(c(temp$un.code,temp$jurisdiction.name)),
+  #                                     c(temp$jurisdiction.id,temp$jurisdiction.id))
   ##nonmfn.affected.end.date
   output$nonmfn.affected.end.date=as.Date(affected.country.end.date)
   
@@ -148,9 +150,17 @@ gta_delta_input_ids=function(
   sql=do.call('sprintf', as.list(c("SELECT framework_id, framework_name FROM gta_framework_log WHERE (lower(framework_name) IN (%s) OR framework_id IN (%s))", 
                                    rep(toString(sprintf("'%s'",tolower(framework.name))), 2))))
   temp=gta_sql_get_value(sql)
-  output$framework.id=mapvalues(tolower(framework.name),
-                                tolower(temp$framework.name),
-                                temp$framework.id )
+  
+  if(is.na(temp)==F){
+    
+    
+    output$framework.id=mapvalues(tolower(framework.name),
+                                  tolower(temp$framework.name),
+                                  temp$framework.id )
+    
+  } else {
+    output$framework.id=NA
+  }
   
   ##framework.new.to.db
   # currently no "green light" has been implemented for this, I thought we wanted to not pursue this option for the time being?
