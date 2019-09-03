@@ -47,7 +47,7 @@ gta_delta_get_all_records=function(link.implementer.id=NULL,
     if(any(is.na(l.record.ids)==F)){
       
       link.data.query <- paste("SELECT * 
-                                FROM delta_",link.area,"_log 
+                                FROM delta_",link.treatment.area,"_log 
                                 WHERE record_id IN (",paste(l.record.ids, collapse=","),")
                                 AND treatment_code IN (",paste(link.code, collapse=','),");", sep="")
       
@@ -61,7 +61,7 @@ gta_delta_get_all_records=function(link.implementer.id=NULL,
         
       } else {
         
-        link.remote.data$treatment.area=link.area
+        link.remote.data$treatment.area=link.treatment.area
         link.remote.data$linkage.id=this.linkage.id
         link.remote.data$is.mfn=T
         
@@ -116,7 +116,7 @@ gta_delta_get_all_records=function(link.implementer.id=NULL,
         l.record.ids=unique(l.record.ids$record.id)
         
         link.data.query <- paste("SELECT * 
-                                  FROM delta_",link.area,"_log 
+                                  FROM delta_",link.treatment.area,"_log 
                                   WHERE record_id IN (",paste(l.record.ids, collapse=","),")
                                   AND treatment_code IN (",paste(link.code, collapse=','),");", sep="")
         
@@ -129,7 +129,7 @@ gta_delta_get_all_records=function(link.implementer.id=NULL,
           link.remote.nmfn.data=data.frame()
         } else {
           
-          link.remote.nmfn.data$treatment.area=link.area
+          link.remote.nmfn.data$treatment.area=link.treatment.area
           link.remote.nmfn.data$linkage.id=this.linkage.id
           link.remote.nmfn.data$is.mfn=F
           
@@ -149,9 +149,9 @@ gta_delta_get_all_records=function(link.implementer.id=NULL,
         if(nrow(link.remote.nmfn.data)>0){
           
           link.status.query <- paste("SELECT * 
-                                    FROM delta_",link.area,"_nonmfn_state_log 
+                                    FROM delta_",link.treatment.area,"_nonmfn_state_log 
                                      WHERE linkage_id IN (",paste(this.linkage.id, collapse=","),")
-                                     AND treatment_area IN (",paste(link.area, collapse=','),");", sep="")
+                                     AND treatment_area IN (",paste(link.treatment.area, collapse=','),");", sep="")
           
           link.status=gta_sql_get_value(query=link.status.query,
                                         db.connection=db.connection)

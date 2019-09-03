@@ -1,7 +1,7 @@
 ## This function parses input data into state acts & interventions.
 
 gta_delta_input_parser=function(
-  delta.data,
+  input.data,
   input.name=NULL,
   user.id=NULL,
   db.connection="pool"
@@ -10,7 +10,14 @@ gta_delta_input_parser=function(
   library(gtasql)
   library(gtalibrary)
   library(data.table)
+  # gta_sql_pool_open(table.prefix = "delta_" )
+  # 
+  # delta.data=delta.data.id
+  # input.name="test"
+  # user.id = unique(delta.data.id$author.id)
+  # db.connection="pool"
   
+  delta.data=input.data
   ## Check for having all variables
   necessary.variables=c("implementing.jurisdiction", "treatment.value", "treatment.code", 
                         "date.announced","date.implemented", "announced.removal.date", "treatment.unit.id",
@@ -46,6 +53,7 @@ gta_delta_input_parser=function(
                                             db.connection=db.connection)
     
     rm(input.id.query)
+ 
     
     if(is.na(this.input.id)){
       
@@ -58,6 +66,7 @@ gta_delta_input_parser=function(
                                           append.by.df = "input.log.update",
                                           get.id = "input.id",
                                          db.connection=db.connection)
+      
     }
     
     
@@ -144,9 +153,10 @@ gta_delta_input_parser=function(
   delta.data=merge(delta.data, linkages, by=c("implementing.jurisdiction.id","affected.flow.id","treatment.code", "treatment.code.type","nonmfn.affected.id"), all.x=T)
   
   ## now have to compare the local and the database values for date.implemented-treatment.value-treatement.unit.type.id for each linkage
-  added.recs=0
+  added.links=0
   for(link in unique(linkages$linkage.id)){
-    # link=-456
+    # link=-9
+    # link=-1
     
     ## generating list of local announcements for this link
     link.local.data=subset(delta.data, linkage.id==link)[,c("implementing.jurisdiction.id","affected.flow.id","treatment.code", "treatment.code.type","nonmfn.affected.id", "treatment.area","date.implemented", "treatment.value" , "treatment.unit.id")]
@@ -248,14 +258,23 @@ gta_delta_input_parser=function(
           upload.data$linkage.id=this.linkage.id
         }
         
-        gta_delta_input_upload(upload.data,
+        gta_delta_input_upload(send.to.remote=upload.data,
                                input.id=this.input.id,
                                input.name=input.name,
                                db.connection=db.connection)
         rm(upload.data)
         
-        added.recs=added.recs+1
-        print(paste("Number of added records:", added.recs))
+        added.links=added.links+1
+        print(paste("Number of added links:", added.links))
+        
+        ## until I can find the source of those leaks in lines 85 and 152, this workaround is all there is
+        gta_sql_pool_close()
+        gta_sql_kill_connections()
+        gta_sql_pool_open(table.prefix = "delta_" )
+        
+       
+        
+        
         }
       }
     }

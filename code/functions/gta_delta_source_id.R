@@ -13,7 +13,11 @@ gta_delta_source_id=function(source.description=NULL,
               WHERE state_act_source='",
               source.description,"';", sep="")
   
-  this.source.id=gta_sql_get_value(query)
+  this.source.id=gta_sql_get_value(query,
+                                   db.connection=db.connection)
+  
+  
+  print(this.source.id)
   
   if(is.na(this.source.id) & create.source==T){
     

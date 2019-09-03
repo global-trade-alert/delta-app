@@ -4,8 +4,13 @@ gta_delta_input_upload=function(send.to.remote,
                                   input.name=NULL,
                                   db.connection="pool"){
   
+  # send.to.remote=upload.data
+  # input.id=this.input.id
+  # input.name=input.name
+  # db.connection=db.connection
   
   ## input check
+  
   
   if(is.null(input.id)|is.null(input.name)){
     stop("Input Upload: Please specify input.id and input.name.")
@@ -36,6 +41,7 @@ gta_delta_input_upload=function(send.to.remote,
                                          get.id = "linkage.id",
                                          db.connection=db.connection)
     
+    
     rm(aj)
     
     upload.data$linkage.id=this.linkage.id
@@ -51,14 +57,18 @@ gta_delta_input_upload=function(send.to.remote,
 
   # Upload new records
   for(source in unique(upload.data$state.act.source)){
+    #source=unique(upload.data$state.act.source)
     
     upload.this=subset(upload.data, state.act.source==source)
     
     for(date in unique(upload.this$date.announced)){ 
+      #date=unique(upload.this$date.announced)
       
       upload.this.date=subset(upload.this, date.announced==as.Date(as.numeric(date), origin="1970-01-01"))
       
       for(int.type.id in unique(upload.this$intervention.type.id)){
+        # int.type.id=unique(upload.this$intervention.type.id)
+        
         # upload.this.type=upload.data
         # int.type.id=upload.data$intervention.type.id
         # date=upload.this.type$date.announced
@@ -73,19 +83,19 @@ gta_delta_input_upload=function(send.to.remote,
                                            create.source=T,
                                            db.connection=db.connection)
         
-        # get treatment.area.id
-        ## BUG BUG BUG BUG, manual override
-        # query=paste("SELECT treatment_area_id 
-        #             FROM delta_treatment_area_list 
-        #             WHERE treatment_area_name = '",
-        #             upload.this.type$treatment.area,"';", sep="")
-        # 
-        # print(upload.this.type)
-        # this.area.id=gta_sql_get_value(query=query,
-        #                                db.connection=db.connection)
-        # rm(query)
         
-        this.area.id=1
+        # get treatment.area.id
+        query=paste("SELECT treatment_area_id
+                     FROM delta_treatment_area_list
+                     WHERE treatment_area_name = '",
+                     upload.this.type$treatment.area,"';", sep="")
+        
+        
+        this.area.id=gta_sql_get_value(query=query,
+                                        db.connection=db.connection)
+        rm(query)
+
+        # this.area.id=1
         
      
         if(is.na(this.area.id)){stop("Treatment area could not be identified.")}
@@ -94,20 +104,22 @@ gta_delta_input_upload=function(send.to.remote,
         #### record.log
         record.query=paste("SELECT reclog.record_id 
                            FROM delta_record_log reclog
-                           JOIN delta_record_linkage reclink
-                           ON reclog.record_id = reclink.record_id
-                           JOIN delta_record_area recarea
-                           ON reclink.record_id = recarea.record_id
-                           WHERE reclog.source_id = ",this.source.id,"
+                           JOIN delta_record_area recarea                           
+                           ON reclog.record_id = recarea.record_id
+                           JOIN delta_record_source recsrc                           
+                           ON recarea.record_id = recsrc.record_id
+                           WHERE recsrc.source_id = ",this.source.id,"
                            AND reclog.intervention_type_id = ",upload.this.type$intervention.type.id,"
-                           AND reclog.record_date_announced = '",as.character(date),"'
-                           AND reclink.linkage_id = ",this.linkage.id,"
+                           AND reclog.record_date_announced = '",as.character(as.Date(as.numeric(date), origin="1970-01-01")),"'
                            AND recarea.treatment_area_id = ",this.area.id,";", sep="")
-        
+       
         this.record.id=gta_sql_get_value(query=record.query,
                                          db.connection=db.connection)
         
+        print(paste("record id",this.record.id))
         rm(record.query)
+        
+        if(length(this.record.id)>1){stop("Multiple records where there should only be one.")}
         
         if(is.na(this.record.id)){
           ## If there is not: create new records in the relevant sheets
@@ -117,13 +129,11 @@ gta_delta_input_upload=function(send.to.remote,
                                        implementation.level.id=upload.this.type$implementation.level.id ,
                                        eligible.firms.id=upload.this.type$eligible.firms.id ,
                                        is.mfn=is.na(upload.this.type$nonmfn.affected.id),
-                                       source.id=this.source.id,
                                        record.date.created=Sys.Date(),
                                        record.date.announced=as.Date(as.numeric(date), origin="1970-01-01"),
                                        stringsAsFactors = F)
-          print(record.log.update)
           
-          this.record.id<<-gta_sql_append_table(append.table = "record.log",
+          this.record.id=gta_sql_append_table(append.table = "record.log",
                                               append.by.df = "record.log.update",
                                               get.id = "record.id",
                                               db.connection=db.connection)
@@ -140,7 +150,9 @@ gta_delta_input_upload=function(send.to.remote,
         got.rec.link=gta_sql_get_value(query=query,
                                       db.connection=db.connection)
         
-        if(is.na(got.rec.link)){
+        print(this.record.id)
+        print(this.linkage.id)
+        if(nrow(got.rec.link)==0){
         
           record.linkage.update<<-data.frame(record.id=this.record.id,
                                            linkage.id=this.linkage.id,
@@ -164,7 +176,7 @@ gta_delta_input_upload=function(send.to.remote,
         got.rec.area=gta_sql_get_value(query=query,
                                        db.connection=db.connection)
         
-        if(is.na(got.rec.area)){
+        if(nrow(got.rec.area)==0){
           
           record.area.update<<-data.frame(record.id=this.record.id,
                                         treatment.area.id=this.area.id,
@@ -191,7 +203,7 @@ gta_delta_input_upload=function(send.to.remote,
         got.rec.imp=gta_sql_get_value(query=query,
                                        db.connection=db.connection)
         
-        if(is.na(got.rec.imp)){
+        if(nrow(got.rec.imp)==0){
           
           record.imp.update<<-data.frame(record.id=this.record.id,
                                        implementing.jurisdiction.id=upload.this.type$implementing.jurisdiction.id,
@@ -218,7 +230,7 @@ gta_delta_input_upload=function(send.to.remote,
                                       db.connection=db.connection)
         rm(query)
         
-        if(is.na(got.rec.src)){
+        if(nrow(got.rec.src)==0){
           
           record.src.update<<-data.frame(record.id=this.record.id,
                                        source.id=this.source.id,
@@ -327,6 +339,7 @@ gta_delta_input_upload=function(send.to.remote,
                                                 append.by.df = "input.discrepancy.log.update",
                                                 db.connection=db.connection)
             
+            
           }
 
         }
@@ -391,7 +404,7 @@ gta_delta_input_upload=function(send.to.remote,
           was.not.enforced=gta_sql_get_value(query=record.query,
                                            db.connection=db.connection)
           rm(record.query)
-        
+          
           if(is.na(was.not.enforced)==F){
             
             update.recs=unique(was.not.enforced$record.id)
@@ -461,3 +474,8 @@ gta_delta_input_upload=function(send.to.remote,
     }
 
 }
+
+# gta_delta_input_upload(send.to.remote=upload.data,
+#                        input.id=this.input.id,
+#                        input.name=input.name,
+#                        db.connection=db.connection)

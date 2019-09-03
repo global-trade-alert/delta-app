@@ -3,7 +3,7 @@ gta_delta_get_relevant_records=function(implementer.id=NULL,
                                         affected.flow.id=NULL,
                                         treatment.code=NULL,
                                         treatment.code.type=NULL,
-                                        affected.country.id=NULL,
+                                        affected.country.id=NA,
                                         excl.mfn=F,
                                         excl.prolongation=F,
                                         cut.off.date=NULL,
@@ -56,7 +56,7 @@ gta_delta_get_relevant_records=function(implementer.id=NULL,
   #### PROCESSING THE REMOTE DATA
   if(nrow(link.remote.data)>0){
     ## Excluding MFN entries, if called for
-    if(is.null(link.affected.country.id)==F  & excl.mfn){
+    if(is.na(link.country)==F  & excl.mfn){
       link.remote.data=subset(link.remote.data, is.mfn==F)
     }
     
@@ -69,7 +69,7 @@ gta_delta_get_relevant_records=function(implementer.id=NULL,
     if(is.null(cut.off.date)==F & nrow(link.remote.data)>0){
       
       link.cut.base=link.remote.data
-      link.cut.base$distance=link.cut.base$date.implemented - cut.off.date
+      link.cut.base$distance=as.Date(link.cut.base$date.implemented) - as.Date(cut.off.date)
       
       link.remote.data=data.frame()
       
