@@ -215,6 +215,7 @@ gta_delta_input_parser=function(
                                                         discrepancy.value.unit.id=local.overlap$treatment.unit.id,
                                                         discrepancy.code.official=local.overlap$treatment.code.official,
                                                         discrepancy.source.id=this.source.id,
+                                                        discrepancy.description="Mismatch with existing entry",
                                                         stringsAsFactors = F)
                 
                 gta_sql_append_table(append.table = "input.discrepancy.log",

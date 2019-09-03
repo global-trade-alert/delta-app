@@ -316,10 +316,11 @@ gta_delta_input_upload=function(send.to.remote,
             input.discrepancy.log.update<<-data.frame(input.id=this.input.id,
                                                     record.id=this.record.id,	
                                                     discrepancy.date=upload.this.type$announced.removal.date,	
-                                                    discrepancy.value=-999,	
+                                                    discrepancy.value=NA,	
                                                     discrepancy.value.unit.id=upload.this.type$treatment.unit.id,
                                                     discrepancy.code.official=upload.this.type$treatment.code.official,
                                                     discrepancy.source.id=this.source.id,
+                                                    discrepancy.description="Not prior value for temporary record",
                                                     stringsAsFactors = F)
             
             gta_sql_append_table(append.table = "input.discrepancy.log",
