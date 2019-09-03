@@ -116,7 +116,6 @@ gta_delta_input_upload=function(send.to.remote,
         this.record.id=gta_sql_get_value(query=record.query,
                                          db.connection=db.connection)
         
-        print(paste("record id",this.record.id))
         rm(record.query)
         
         if(length(this.record.id)>1){stop("Multiple records where there should only be one.")}
@@ -150,8 +149,6 @@ gta_delta_input_upload=function(send.to.remote,
         got.rec.link=gta_sql_get_value(query=query,
                                       db.connection=db.connection)
         
-        print(this.record.id)
-        print(this.linkage.id)
         if(nrow(got.rec.link)==0){
         
           record.linkage.update<<-data.frame(record.id=this.record.id,
@@ -405,7 +402,7 @@ gta_delta_input_upload=function(send.to.remote,
                                            db.connection=db.connection)
           rm(record.query)
           
-          if(is.na(was.not.enforced)==F){
+          if(nrow(was.not.enforced)>0){
             
             update.recs=unique(was.not.enforced$record.id)
             
