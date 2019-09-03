@@ -35,6 +35,7 @@ gta_delta_get_jurisdiction_id=function(jurisdiction.name=NULL,
     if(any(is.na(ij.group.ids)==F)){
       
       ij.group.ids$jurisdiction.name=ij.group.ids$jurisdiction.group.name
+      ij.group.ids$jurisdiction.group.name=NULL
       ij.ids= rbind(ij.ids,ij.group.ids)
       
       jurisdiction.name=jurisdiction.name[! jurisdiction.name %in% unique(ij.group.ids$jurisdiction.group.name)]
