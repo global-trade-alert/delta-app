@@ -293,7 +293,7 @@ gta_delta_upload=function(
     FROM delta_temp_records_",user.id," a, delta_source_log b
     WHERE treatment_value != live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id
-    AND a.state_act_source = b.state_act_source;
+    AND a.source_id = b.source_id;
     
     /* ADD INTO NONMFN STATE LOG */
     /* FIND OUT HOW TO GET STATE REDUNDANT, FOR TIME BEING JUST ASSUMED TO BE 0 */
@@ -302,13 +302,13 @@ gta_delta_upload=function(
     FROM delta_temp_records_",user.id," a, delta_source_log b
     WHERE nonmfn_affected IS NOT NULL
     AND nonmfn_affected_end_date IS NULL 
-    AND a.state_act_source = b.state_act_source
+    AND a.source_id = b.source_id
     UNION 
     SELECT live_link linkage_id, treatment_area, nonmfn_affected_end_date nonmfn_state_date, 0 AS nonmfn_state, b.source_id, 0 AS state_redundant  
     FROM delta_temp_records_",user.id," a, delta_source_log b
     WHERE nonmfn_affected IS NOT NULL
     AND nonmfn_affected_end_date IS NOT NULL 
-    AND a.state_act_source = b.state_act_source;
+    AND a.source_id = b.source_id;
     
     /* ADD INTO LOG OF APPROPRIATE AREA*/ 
     INSERT INTO delta_",treatment.area,"_log (record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official, announced_as_temporary) 
