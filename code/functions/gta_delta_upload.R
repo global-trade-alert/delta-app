@@ -169,6 +169,8 @@ gta_delta_upload=function(
     FROM check_linkage_",user.id," 
     WHERE linkage_id IS NULL;
 
+    DROP TABLE IF EXISTS check_linkage_",user.id,"; 
+
     /* ADD NEW SOURCES */ 
     INSERT INTO delta_source_log (state_act_source, is_source_official) 
     SELECT DISTINCT state_act_source, is_source_official
