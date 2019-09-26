@@ -225,7 +225,7 @@ gta_delta_upload=function(
     /* ADD NEW RECORDS AND ORDER BY RECORD_ID TO ENSURE LINK IS CORRECTLY MADE */ 
     /* FIRST CHECK WHETHER RECORD ALREADY EXISTS */
     CREATE TABLE delta_temp_records_",user.id," AS 
-    SELECT a.source_id, a.treatment_area, a.affected_flow_id, a.intervention_type_id, a.implementing_jurisdiction, a.implementing_jurisdiction_id, 
+    SELECT a.source_id, a.treatment_area, a.affected_flow_id, a.intervention_type_id, a.implementing_jurisdiction, a.implementing_jurisdiction_id, a.nonmfn_affected,
     (CASE WHEN a.nonmfn_affected IS NULL THEN 1 ELSE 0 END) AS is_mfn, a.date_announced, a.treatment_code, a.treatment_code_type, a.coarse_code, a.coarse_code_type, a.date_implemented, a.treatment_value, a.treatment_unit_id, a.treatment_code_official, 
     a.live_treatment_value, a.live_treatment_unit_id, a.nonmfn_affected_end_date, a.eligible_firms_id, a.implementation_level_id, DATE(NOW()) as date_created, a.live_link, b.record_id
     FROM delta_temp_upload_data_",user.id," a
@@ -250,7 +250,7 @@ gta_delta_upload=function(
     /* RECREATE TEMP */
     DROP TABLE IF EXISTS delta_temp_records_",user.id,";
     CREATE TABLE delta_temp_records_",user.id," AS 
-    SELECT a.source_id, a.treatment_area, a.affected_flow_id, a.intervention_type_id, a.implementing_jurisdiction, a.implementing_jurisdiction_id, 
+    SELECT a.source_id, a.treatment_area, a.affected_flow_id, a.intervention_type_id, a.implementing_jurisdiction, a.implementing_jurisdiction_id, a.nonmfn_affected,
     (CASE WHEN a.nonmfn_affected IS NULL THEN 1 ELSE 0 END) AS is_mfn, a.date_announced, a.treatment_code, a.treatment_code_type, a.coarse_code, a.coarse_code_type, a.date_implemented, a.treatment_value, a.treatment_unit_id, a.treatment_code_official, 
     a.live_treatment_value, a.live_treatment_unit_id, a.nonmfn_affected_end_date, a.eligible_firms_id, a.implementation_level_id, DATE(NOW()) as date_created, a.live_link, b.record_id
     FROM delta_temp_upload_data_",user.id," a
