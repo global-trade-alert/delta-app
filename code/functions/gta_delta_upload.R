@@ -217,8 +217,6 @@ gta_delta_upload=function(
     WHERE treatment_value = live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
     
-    DROP TABLE IF EXISTS delta_temp_records_",user.id,";
-    
     /* ADD NEW RECORD IDS */
     /* BE CAREFUL WITH imp_jur which has eu-28.. do we want 1 record per country in the eu-28 or just one record for eu-28?  */
     /* CURRENTLY THIS IS DONE as one record for EACH COUNTRY IN eu-28 (no choice due to how we have not set up jurisdiction ids for country-groups) */
@@ -227,28 +225,31 @@ gta_delta_upload=function(
     
     /* ADD NEW RECORDS AND ORDER BY RECORD_ID TO ENSURE LINK IS CORRECTLY MADE */ 
     /* FIRST CHECK WHETHER RECORD ALREADY EXISTS */
-    CREATE TABLE delta_temp_records_",user.id," AS 
-    SELECT a.source_id, a.treatment_area, a.affected_flow_id, a.intervention_type_id, a.implementing_jurisdiction, a.implementing_jurisdiction_id, a.nonmfn_affected,
-    (CASE WHEN a.nonmfn_affected IS NULL THEN 1 ELSE 0 END) AS is_mfn, a.date_announced, a.treatment_code, a.treatment_code_type, a.coarse_code, a.coarse_code_type, a.date_implemented, a.treatment_value, a.treatment_unit_id, a.treatment_code_official, 
-    a.live_treatment_value, a.live_treatment_unit_id, a.nonmfn_affected_end_date, a.eligible_firms_id, a.implementation_level_id, DATE(NOW()) as date_created, a.live_link, b.record_id
-    FROM delta_temp_upload_data_",user.id," a
-    LEFT JOIN delta_record_log b
-    ON a.intervention_type_id=b.intervention_type_id
-    AND a.affected_flow_id = b.affected_flow_id
-    AND a.implementation_level_id=b.implementation_level_id
-    AND a.eligible_firms_id=b.eligible_firms_id
-    AND (CASE WHEN a.nonmfn_affected IS NULL THEN 1 ELSE 0 END)=b.is_mfn
-    AND a.source_id = b.source_id
-    AND a.date_announced=b.record_date_announced;
+
+    DROP TABLE IF EXISTS check_records_",user.id,";
+    CREATE TABLE check_records_",user.id," AS 
+	  SELECT newrecs.*, reclog.record_id, reclog.is_mfn
+	  FROM (SELECT DISTINCT intervention_type_id,affected_flow_id, implementation_level_id, eligible_firms_id, nonmfn_affected, source_id,date_announced
+    FROM delta_temp_upload_data_",user.id,") AS newrecs
+    LEFT JOIN delta_record_log reclog
+    ON newrecs.intervention_type_id=reclog.intervention_type_id
+    AND newrecs.affected_flow_id = reclog.affected_flow_id
+    AND newrecs.implementation_level_id=reclog.implementation_level_id
+    AND newrecs.eligible_firms_id=reclog.eligible_firms_id
+    AND (CASE WHEN newrecs.nonmfn_affected IS NULL THEN 1 ELSE 0 END)=reclog.is_mfn
+    AND newrecs.source_id = reclog.source_id
+    AND newrecs.date_announced=reclog.record_date_announced;
 
     /* UPLOAD NEW RECORDS */
     INSERT INTO delta_record_log (intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, is_mfn, source_id, record_date_announced, record_date_created)
     SELECT DISTINCT intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, 
     is_mfn, source_id, date_announced record_date_created, DATE(NOW()) as record_date_created
-    FROM delta_temp_records_",user.id,"
+    FROM check_records_",user.id,"
     WHERE record_id IS NULL
     GROUP BY source_id, treatment_area, affected_flow_id, intervention_type_id, implementing_jurisdiction_id, is_mfn, date_announced, eligible_firms_id
     ORDER BY date_announced ASC;
+
+    DROP TABLE IF EXISTS check_records_",user.id,";
 
     /* RECREATE TEMP */
     DROP TABLE IF EXISTS delta_temp_records_",user.id,";
