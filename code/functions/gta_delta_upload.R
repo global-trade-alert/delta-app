@@ -167,12 +167,21 @@ gta_delta_upload=function(
     SELECT DISTINCT implementing_jurisdiction_id linkage_implementer_id, affected_flow_id linkage_affected_flow_id, treatment_code linkage_code, treatment_code_type linkage_code_type, nonmfn_affected_id linkage_affected_country_id
     FROM added_links_",user.id," 
     WHERE live_link IS NULL;
+
+    /* ADD NEW SOURCES */ 
+    INSERT INTO delta_source_log (state_act_source, is_source_official) 
+    SELECT DISTINCT state_act_source, is_source_official
+    FROM delta_temp_upload_data_",user.id," 
+    WHERE state_act_source NOT IN (SELECT DISTINCT state_act_source FROM delta_source_log);
     
     /* DROP AND RE-JOIN WITH NEWLY ADDED LINK IDS */
     DROP TABLE IF EXISTS added_links_",user.id,"; 
+
     CREATE TABLE added_links_",user.id," AS 
-    SELECT a.*, b.linkage_id live_link 
+    SELECT a.*, c.source_id, b.linkage_id live_link 
     FROM delta_temp_upload_data_",user.id," a
+    LEFT JOIN delta_source_log c
+    ON a.state_act_source=c.state_act_source
     LEFT JOIN delta_linkage_log b
     ON a.implementing_jurisdiction_id=b.linkage_implementer_id
     AND a.affected_flow_id=b.linkage_affected_flow_id
@@ -183,8 +192,10 @@ gta_delta_upload=function(
     /* MERGE TREATMENT VALUES WITH SAME DATE/CODE/LINK AND DROP THOSE WITH IDENTICAL INFORMATION AS IN DATABASE */
     DROP TABLE delta_temp_upload_data_",user.id,";
     CREATE TABLE delta_temp_upload_data_",user.id," AS
-    SELECT a.*, d.treatment_value live_treatment_value, d.treatment_unit_id live_treatment_unit_id FROM added_links_",user.id," a
-    LEFT JOIN (SELECT b.linkage_id ,c.* FROM added_links_",user.id," a, delta_record_linkage b, delta_",treatment.area,"_log c
+    SELECT a.*, d.treatment_value live_treatment_value, d.treatment_unit_id live_treatment_unit_id 
+    FROM added_links_",user.id," a
+    LEFT JOIN (SELECT b.linkage_id ,c.* 
+    FROM added_links_",user.id," a, delta_record_linkage b, delta_",treatment.area,"_log c
     WHERE a.live_link = b.linkage_id
     AND b.record_id = c.record_id
     AND a.date_implemented = c.date_implemented
@@ -203,12 +214,6 @@ gta_delta_upload=function(
     WHERE treatment_value = live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
     
-    /* ADD NEW SOURCES */ 
-    INSERT INTO delta_source_log (state_act_source, is_source_official) 
-    SELECT DISTINCT state_act_source, is_source_official
-    FROM delta_temp_upload_data_",user.id," 
-    WHERE state_act_source NOT IN (SELECT DISTINCT state_act_source FROM delta_source_log);
-    
     DROP TABLE IF EXISTS delta_temp_records_",user.id,";
     
     /* ADD NEW RECORD IDS */
@@ -218,7 +223,7 @@ gta_delta_upload=function(
     /* I ALSO ADDED UNIQUE IMPLEMENTATION LEVEL PER RECORD, WHICH IS NOT THE CASE IN THE GTA_DELTA_INPUT_UPLOAD FUNCTION IS THIS CORRECT? */
     
     CREATE TABLE delta_temp_records_",user.id," AS 
-    SELECT state_act_source, treatment_area, affected_flow_id, intervention_type_id, implementing_jurisdiction, implementing_jurisdiction_id, 
+    SELECT source_id, treatment_area, affected_flow_id, intervention_type_id, implementing_jurisdiction, implementing_jurisdiction_id, 
     nonmfn_affected, date_announced, treatment_code, treatment_code_type, coarse_code, coarse_code_type, date_implemented, treatment_value, treatment_unit_id, treatment_code_official, 
     live_treatment_value, live_treatment_unit_id, nonmfn_affected_end_date, eligible_firms_id, implementation_level_id, DATE(NOW()) as date_created, live_link, 
     ((SELECT AUTO_INCREMENT FROM information_schema.tables WHERE table_name='delta_record_log') - 1 + DENSE_RANK() OVER(ORDER BY state_act_source, treatment_area, affected_flow_id, intervention_type_id, implementing_jurisdiction_id, nonmfn_affected, date_announced, eligible_firms_id, implementation_level_id)) as new_record_id
@@ -226,9 +231,9 @@ gta_delta_upload=function(
     
     
     /* ADD NEW RECORDS AND ORDER BY NEW_RECORD_ID TO ENSURE LINK IS CORRECTLY MADE */ 
-    INSERT INTO delta_record_log (intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, is_mfn, record_date_announced, record_date_created)
+    INSERT INTO delta_record_log (intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, is_mfn, source_id, record_date_announced, record_date_created)
     SELECT DISTINCT intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, 
-    (CASE WHEN nonmfn_affected IS NULL THEN 1 ELSE 0 END) AS is_mfn, date_announced record_date_created, DATE(NOW()) as record_date_created
+    (CASE WHEN nonmfn_affected IS NULL THEN 1 ELSE 0 END) AS is_mfn, source_id, date_announced record_date_created, DATE(NOW()) as record_date_created
     FROM delta_temp_records_",user.id,"
     GROUP BY state_act_source, treatment_area, affected_flow_id, intervention_type_id, implementing_jurisdiction_id, nonmfn_affected, date_announced, eligible_firms_id, new_record_id
     ORDER BY new_record_id ASC;
