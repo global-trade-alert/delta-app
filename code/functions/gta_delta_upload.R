@@ -235,7 +235,7 @@ gta_delta_upload=function(
     SELECT DISTINCT intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, 
     (CASE WHEN nonmfn_affected IS NULL THEN 1 ELSE 0 END) AS is_mfn, source_id, date_announced record_date_created, DATE(NOW()) as record_date_created
     FROM delta_temp_records_",user.id,"
-    GROUP BY state_act_source, treatment_area, affected_flow_id, intervention_type_id, implementing_jurisdiction_id, nonmfn_affected, date_announced, eligible_firms_id, new_record_id
+    GROUP BY source_id, treatment_area, affected_flow_id, intervention_type_id, implementing_jurisdiction_id, nonmfn_affected, date_announced, eligible_firms_id, new_record_id
     ORDER BY new_record_id ASC;
     
     /* ADD RECORD LINKAGES */ 
