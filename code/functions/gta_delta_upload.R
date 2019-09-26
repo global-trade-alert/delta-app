@@ -222,7 +222,7 @@ gta_delta_upload=function(
     /* IF WANTED, CHANGE THIS IN THE DENSE_RANK (and the group by in the insert into delta_record_log) WHERE NEW RECORD IDS ARE ATTRIBUTED! */
     /* I ALSO ADDED UNIQUE IMPLEMENTATION LEVEL PER RECORD, WHICH IS NOT THE CASE IN THE GTA_DELTA_INPUT_UPLOAD FUNCTION IS THIS CORRECT? */
     
-    /* ADD NEW RECORDS AND ORDER BY NEW_RECORD_ID TO ENSURE LINK IS CORRECTLY MADE */ 
+    /* ADD NEW RECORDS AND ORDER BY RECORD_ID TO ENSURE LINK IS CORRECTLY MADE */ 
     /* FIRST CHECK WHETHER RECORD ALREADY EXISTS */
     CREATE TABLE delta_temp_records_",user.id," AS 
     SELECT a.source_id, a.treatment_area, a.affected_flow_id, a.intervention_type_id, a.implementing_jurisdiction, a.implementing_jurisdiction_id, 
@@ -265,29 +265,29 @@ gta_delta_upload=function(
     
     /* ADD RECORD LINKAGES */ 
     INSERT INTO delta_record_linkage (record_id, linkage_id)
-    SELECT DISTINCT new_record_id record_id, live_link linkage_id
+    SELECT DISTINCT record_id, live_link linkage_id
     FROM delta_temp_records_",user.id,";
     
     /* ADD RECORD IMPLEMENTER */ 
     INSERT INTO delta_record_implementer (record_id, implementing_jurisdiction_id)
-    SELECT DISTINCT new_record_id, implementing_jurisdiction_id 
+    SELECT DISTINCT record_id, implementing_jurisdiction_id 
     FROM delta_temp_records_",user.id,";
     
     /* ADD RECORD TREATMENT AREA */ 
     INSERT INTO delta_record_area (record_id, treatment_area_id)
-    SELECT DISTINCT new_record_id record_id, b.treatment_area_id 
+    SELECT DISTINCT record_id, b.treatment_area_id 
     FROM delta_temp_records_",user.id," a, delta_treatment_area_list b
     WHERE a.treatment_area = b.treatment_area_name;
     
     /* ADD COARSE RECORDS */ 
     INSERT INTO delta_coarse_code_log (record_id, coarse_code, coarse_code_type) 
-    SELECT DISTINCT new_record_id record_id, coarse_code, coarse_code_type
+    SELECT DISTINCT record_id, coarse_code, coarse_code_type
     FROM delta_temp_records_",user.id,"
     WHERE coarse_code IS NOT NULL;
     
     /* ADD INTO INPUT DISCREPANCY LOG */ 
     INSERT INTO delta_input_discrepancy_log (input_id, record_id, discrepancy_date, discrepancy_value, discrepancy_value_unit_id, discrepancy_code_official, discrepancy_source_id, discrepancy_description) 
-    SELECT DISTINCT (SELECT AUTO_INCREMENT FROM information_schema.tables WHERE table_name='delta_input_log')-1 input_id, new_record_id record_id, date_implemented discrepancy_date, 
+    SELECT DISTINCT (SELECT AUTO_INCREMENT FROM information_schema.tables WHERE table_name='delta_input_log')-1 input_id, record_id, date_implemented discrepancy_date, 
     treatment_value discrepancy_value, treatment_unit_id discrepancy_value_unit_id, treatment_code_official, b.source_id discrepancy_source_id, 
     'Not prior value for temporary record' AS discrepancy_description
     FROM delta_temp_records_",user.id," a, delta_source_log b
@@ -312,7 +312,7 @@ gta_delta_upload=function(
     
     /* ADD INTO LOG OF APPROPRIATE AREA*/ 
     INSERT INTO delta_",treatment.area,"_log (record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official, announced_as_temporary) 
-    SELECT DISTINCT new_record_id record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official,
+    SELECT DISTINCT record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official,
     (CASE WHEN nonmfn_affected_end_date IS NOT NULL THEN 1 ELSE 0 END) AS announced_as_temporary
     FROM delta_temp_records_",user.id,"
     WHERE live_treatment_value IS NULL;
