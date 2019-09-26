@@ -151,30 +151,31 @@ gta_delta_upload=function(
     "
     DROP TABLE IF EXISTS added_links_",user.id,"; 
     /* IDENTIFY WHICH LINKAGES ARE ALREADY IN DATABASE */ 
-    CREATE TABLE added_links_",user.id," AS 
-    SELECT a.*, b.linkage_id live_link 
-    FROM delta_temp_upload_data_",user.id," a
-    LEFT JOIN (SELECT *
-              FROM delta_linkage_log
-              WHERE linkage_implementer_id IN (SELECT DISTINCT implementing_jurisdiction_id
-                   FROM delta_temp_upload_data_",user.id,")) b
-    ON a.implementing_jurisdiction_id=b.linkage_implementer_id
-    AND a.affected_flow_id=b.linkage_affected_flow_id
-    AND a.treatment_code=b.linkage_code
-    AND a.treatment_code_type=b.linkage_code_type
-    AND (a.nonmfn_affected_id=b.linkage_affected_country_id OR (a.nonmfn_affected_id IS NULL AND b.linkage_affected_country_id IS NULL));
+    DROP TABLE IF EXISTS new_links_",user.id,"; 
+    CREATE TABLE new_links_",user.id," AS
+    SELECT DISTINCT implementing_jurisdiction_id, affected_flow_id, treatment_code, treatment_code_type, nonmfn_affected_id
+    FROM delta_temp_upload_data_",user.id,";
+
+    DROP TABLE IF EXISTS old_links_",user.id,";
+    CREATE TABLE old_links_",user.id," AS
+    SELECT linkage_id, linkage_implementer_id, linkage_affected_flow_id, linkage_code, linkage_code_type, linkage_affected_country_id
+    FROM delta_linkage_log linklog
+    WHERE linklog.linkage_implementer_id IN (SELECT implementing_jurisdiction_id FROM new_links_",user.id,");
     
-    /* ADD MISSING LINKAGES TO DATABASE */ 
     INSERT INTO delta_linkage_log (linkage_implementer_id, linkage_affected_flow_id, linkage_code, linkage_code_type, linkage_affected_country_id)
-    SELECT DISTINCT implementing_jurisdiction_id linkage_implementer_id, affected_flow_id linkage_affected_flow_id, treatment_code linkage_code, treatment_code_type linkage_code_type, nonmfn_affected_id linkage_affected_country_id
-    FROM added_links_",user.id," 
-    WHERE live_link IS NULL;
-    /* ADD NEW SOURCES */ 
-    INSERT INTO delta_source_log (state_act_source, is_source_official) 
-    SELECT DISTINCT state_act_source, is_source_official
-    FROM delta_temp_upload_data_",user.id," 
-    WHERE state_act_source NOT IN (SELECT DISTINCT state_act_source FROM delta_source_log);
+    SELECT implementing_jurisdiction_id, affected_flow_id, treatment_code, treatment_code_type, nonmfn_affected_id
+    FROM new_links_",user.id," 
+    WHERE NOT EXISTS(SELECT linkage_id
+                     FROM old_links_",user.id," linklog
+                     WHERE linklog.linkage_implementer_id IN (SELECT implementing_jurisdiction_id FROM new_links_",user.id,")
+                     AND linklog.linkage_affected_flow_id IN (SELECT affected_flow_id FROM new_links_",user.id,")
+                     AND linklog.linkage_code IN (SELECT treatment_code FROM new_links_",user.id,")
+                     AND linklog.linkage_code_type IN (SELECT treatment_code_type FROM new_links_",user.id,")
+                     AND linklog.linkage_affected_country_id IN (SELECT nonmfn_affected_id FROM new_links_",user.id,"));
     
+    DROP TABLE IF EXISTS new_links_",user.id,"; 
+    DROP TABLE IF EXISTS old_links_",user.id,";
+
     /* DROP AND RE-JOIN WITH NEWLY ADDED LINK IDS */
     DROP TABLE IF EXISTS added_links_",user.id,"; 
     CREATE TABLE added_links_",user.id," AS 
@@ -237,6 +238,7 @@ gta_delta_upload=function(
     AND (CASE WHEN a.nonmfn_affected IS NULL THEN 1 ELSE 0 END)=b.is_mfn
     AND a.source_id = b.source_id
     AND a.date_announced=b.record_date_announced;
+
     /* UPLOAD NEW RECORDS */
     INSERT INTO delta_record_log (intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, is_mfn, source_id, record_date_announced, record_date_created)
     SELECT DISTINCT intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, 
@@ -245,7 +247,8 @@ gta_delta_upload=function(
     WHERE record_id IS NULL
     GROUP BY source_id, treatment_area, affected_flow_id, intervention_type_id, implementing_jurisdiction_id, is_mfn, date_announced, eligible_firms_id
     ORDER BY date_announced ASC;
-    /* RECREATE TEMP */
+
+    /* CREATE TEMP */
     DROP TABLE IF EXISTS delta_temp_records_",user.id,";
     CREATE TABLE delta_temp_records_",user.id," AS 
     SELECT a.source_id, a.treatment_area, a.affected_flow_id, a.intervention_type_id, a.implementing_jurisdiction, a.implementing_jurisdiction_id, a.nonmfn_affected,
