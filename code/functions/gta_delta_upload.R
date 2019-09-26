@@ -4,9 +4,9 @@ gta_delta_upload=function(
   user.id=NULL,
   db.connection='pool'
 ){
-
+  
   source('17 Shiny/6 delta app/code/functions/gta_delta_get_jurisdiction_id.R')
-
+  
   necessary.variables=c("implementing.jurisdiction", "treatment.value", "treatment.code", 
                         "date.announced","date.implemented", "announced.removal.date", "treatment.unit.id",
                         "treatment.code.official", "treatment.area", "treatment.code.type",
@@ -28,34 +28,34 @@ gta_delta_upload=function(
     stop("Please assign 1 input name and specify 1 user ID.")
     
   } else {
-
-
+    
+    
     input.id.query  <- paste("SELECT input_id
                              FROM delta_input_log
                              WHERE user_id = ",user.id,"
                              AND input_name = '",input.name,"';", sep="")
-
+    
     this.input.id=gta_sql_get_value(query=input.id.query,
                                     db.connection=db.connection)
-
+    
     rm(input.id.query)
-
-
+    
+    
     if(is.na(this.input.id)){
-
+      
       input.log.update<<-data.frame(user.id=user.id,
                                     input.date=Sys.Date(),
                                     input.name=input.name,
                                     stringsAsFactors = F)
-
+      
       this.input.id=gta_sql_append_table(append.table = "input.log",
                                          append.by.df = "input.log.update",
                                          get.id = "input.id",
                                          db.connection=db.connection)
-
+      
     }
-
-
+    
+    
   }
   
   ## expanding coarse.codes
@@ -149,28 +149,26 @@ gta_delta_upload=function(
   
   sql.statement=paste0(
     "
-    DROP TABLE IF EXISTS check_linkage_",user.id,"; 
-
+    DROP TABLE IF EXISTS added_links_",user.id,"; 
     /* IDENTIFY WHICH LINKAGES ARE ALREADY IN DATABASE */ 
-    CREATE TABLE check_linkage_",user.id," AS
-    SELECT newlink.*, linklog.linkage_id
-    FROM (SELECT DISTINCT implementing_jurisdiction_id, affected_flow_id, treatment_code, treatment_code_type, nonmfn_affected_id
-    FROM delta_temp_upload_data_",user.id,") AS newlink
-    LEFT JOIN delta_linkage_log linklog
-    ON newlink.implementing_jurisdiction_id = linklog.linkage_implementer_id
-    AND newlink.affected_flow_id = linklog.linkage_affected_flow_id
-    AND newlink.treatment_code=linklog.linkage_code
-    AND newlink.treatment_code_type=linklog.linkage_code_type
-    AND newlink.nonmfn_affected_id=linklog.linkage_affected_country_id;
+    CREATE TABLE added_links_",user.id," AS 
+    SELECT a.*, b.linkage_id live_link 
+    FROM delta_temp_upload_data_",user.id," a
+    LEFT JOIN (SELECT *
+              FROM delta_linkage_log
+              WHERE linkage_implementer_id IN (SELECT DISTINCT implementing_jurisdiction_id
+                   FROM delta_temp_upload_data_",user.id,")) b
+    ON a.implementing_jurisdiction_id=b.linkage_implementer_id
+    AND a.affected_flow_id=b.linkage_affected_flow_id
+    AND a.treatment_code=b.linkage_code
+    AND a.treatment_code_type=b.linkage_code_type
+    AND (a.nonmfn_affected_id=b.linkage_affected_country_id OR (a.nonmfn_affected_id IS NULL AND b.linkage_affected_country_id IS NULL));
     
     /* ADD MISSING LINKAGES TO DATABASE */ 
     INSERT INTO delta_linkage_log (linkage_implementer_id, linkage_affected_flow_id, linkage_code, linkage_code_type, linkage_affected_country_id)
     SELECT DISTINCT implementing_jurisdiction_id linkage_implementer_id, affected_flow_id linkage_affected_flow_id, treatment_code linkage_code, treatment_code_type linkage_code_type, nonmfn_affected_id linkage_affected_country_id
-    FROM check_linkage_",user.id," 
-    WHERE linkage_id IS NULL;
-
-    DROP TABLE IF EXISTS check_linkage_",user.id,"; 
-
+    FROM added_links_",user.id," 
+    WHERE live_link IS NULL;
     /* ADD NEW SOURCES */ 
     INSERT INTO delta_source_log (state_act_source, is_source_official) 
     SELECT DISTINCT state_act_source, is_source_official
@@ -179,7 +177,6 @@ gta_delta_upload=function(
     
     /* DROP AND RE-JOIN WITH NEWLY ADDED LINK IDS */
     DROP TABLE IF EXISTS added_links_",user.id,"; 
-
     CREATE TABLE added_links_",user.id," AS 
     SELECT a.*, c.source_id, b.linkage_id live_link 
     FROM delta_temp_upload_data_",user.id," a
@@ -217,6 +214,8 @@ gta_delta_upload=function(
     WHERE treatment_value = live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
     
+    DROP TABLE IF EXISTS delta_temp_records_",user.id,";
+    
     /* ADD NEW RECORD IDS */
     /* BE CAREFUL WITH imp_jur which has eu-28.. do we want 1 record per country in the eu-28 or just one record for eu-28?  */
     /* CURRENTLY THIS IS DONE as one record for EACH COUNTRY IN eu-28 (no choice due to how we have not set up jurisdiction ids for country-groups) */
@@ -225,32 +224,27 @@ gta_delta_upload=function(
     
     /* ADD NEW RECORDS AND ORDER BY RECORD_ID TO ENSURE LINK IS CORRECTLY MADE */ 
     /* FIRST CHECK WHETHER RECORD ALREADY EXISTS */
-
-    DROP TABLE IF EXISTS check_records_",user.id,";
-    CREATE TABLE check_records_",user.id," AS 
-	  SELECT newrecs.*, reclog.record_id, reclog.is_mfn
-	  FROM (SELECT DISTINCT intervention_type_id,affected_flow_id, implementation_level_id, eligible_firms_id, nonmfn_affected, source_id,date_announced
-    FROM delta_temp_upload_data_",user.id,") AS newrecs
-    LEFT JOIN delta_record_log reclog
-    ON newrecs.intervention_type_id=reclog.intervention_type_id
-    AND newrecs.affected_flow_id = reclog.affected_flow_id
-    AND newrecs.implementation_level_id=reclog.implementation_level_id
-    AND newrecs.eligible_firms_id=reclog.eligible_firms_id
-    AND (CASE WHEN newrecs.nonmfn_affected IS NULL THEN 1 ELSE 0 END)=reclog.is_mfn
-    AND newrecs.source_id = reclog.source_id
-    AND newrecs.date_announced=reclog.record_date_announced;
-
+    CREATE TABLE delta_temp_records_",user.id," AS 
+    SELECT a.source_id, a.treatment_area, a.affected_flow_id, a.intervention_type_id, a.implementing_jurisdiction, a.implementing_jurisdiction_id, a.nonmfn_affected,
+    (CASE WHEN a.nonmfn_affected IS NULL THEN 1 ELSE 0 END) AS is_mfn, a.date_announced, a.treatment_code, a.treatment_code_type, a.coarse_code, a.coarse_code_type, a.date_implemented, a.treatment_value, a.treatment_unit_id, a.treatment_code_official, 
+    a.live_treatment_value, a.live_treatment_unit_id, a.nonmfn_affected_end_date, a.eligible_firms_id, a.implementation_level_id, DATE(NOW()) as date_created, a.live_link, b.record_id
+    FROM delta_temp_upload_data_",user.id," a
+    LEFT JOIN delta_record_log b
+    ON a.intervention_type_id=b.intervention_type_id
+    AND a.affected_flow_id = b.affected_flow_id
+    AND a.implementation_level_id=b.implementation_level_id
+    AND a.eligible_firms_id=b.eligible_firms_id
+    AND (CASE WHEN a.nonmfn_affected IS NULL THEN 1 ELSE 0 END)=b.is_mfn
+    AND a.source_id = b.source_id
+    AND a.date_announced=b.record_date_announced;
     /* UPLOAD NEW RECORDS */
     INSERT INTO delta_record_log (intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, is_mfn, source_id, record_date_announced, record_date_created)
     SELECT DISTINCT intervention_type_id, affected_flow_id, implementation_level_id, eligible_firms_id, 
     is_mfn, source_id, date_announced record_date_created, DATE(NOW()) as record_date_created
-    FROM check_records_",user.id,"
+    FROM delta_temp_records_",user.id,"
     WHERE record_id IS NULL
     GROUP BY source_id, treatment_area, affected_flow_id, intervention_type_id, implementing_jurisdiction_id, is_mfn, date_announced, eligible_firms_id
     ORDER BY date_announced ASC;
-
-    DROP TABLE IF EXISTS check_records_",user.id,";
-
     /* RECREATE TEMP */
     DROP TABLE IF EXISTS delta_temp_records_",user.id,";
     CREATE TABLE delta_temp_records_",user.id," AS 
@@ -324,12 +318,10 @@ gta_delta_upload=function(
     
     DROP TABLE delta_temp_records_",user.id,";
     DROP TABLE delta_temp_upload_data_",user.id,";
-
-
-        
-          
-          
-  "
+    
+    
+    
+    "
   )
   
   # return(cat(sql.statement))
