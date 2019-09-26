@@ -149,24 +149,25 @@ gta_delta_upload=function(
   
   sql.statement=paste0(
     "
-    DROP TABLE IF EXISTS added_links_",user.id,"; 
+    DROP TABLE IF EXISTS check_linkage_",user.id,"; 
 
     /* IDENTIFY WHICH LINKAGES ARE ALREADY IN DATABASE */ 
-    CREATE TABLE added_links_",user.id," AS 
-    SELECT a.*, b.linkage_id live_link 
-    FROM delta_temp_upload_data_",user.id," a
-    LEFT JOIN delta_linkage_log b
-    ON a.implementing_jurisdiction_id=b.linkage_implementer_id
-    AND a.affected_flow_id=b.linkage_affected_flow_id
-    AND a.treatment_code=b.linkage_code
-    AND a.treatment_code_type=b.linkage_code_type
-    AND (a.nonmfn_affected_id=b.linkage_affected_country_id OR (a.nonmfn_affected_id IS NULL AND b.linkage_affected_country_id IS NULL));
+    CREATE TABLE check_linkage_",user.id," AS
+    SELECT newlink.*, linklog.linkage_id
+    FROM (SELECT DISTINCT implementing_jurisdiction_id, affected_flow_id, treatment_code, treatment_code_type, nonmfn_affected_id
+    FROM delta_temp_upload_data_",user.id,") AS newlink
+    LEFT JOIN delta_linkage_log linklog
+    ON newlink.implementing_jurisdiction_id = linklog.linkage_implementer_id
+    AND newlink.affected_flow_id = linklog.linkage_affected_flow_id
+    AND newlink.treatment_code=linklog.linkage_code
+    AND newlink.treatment_code_type=linklog.linkage_code_type
+    AND newlink.nonmfn_affected_id=linklog.linkage_affected_country_id;
     
     /* ADD MISSING LINKAGES TO DATABASE */ 
     INSERT INTO delta_linkage_log (linkage_implementer_id, linkage_affected_flow_id, linkage_code, linkage_code_type, linkage_affected_country_id)
     SELECT DISTINCT implementing_jurisdiction_id linkage_implementer_id, affected_flow_id linkage_affected_flow_id, treatment_code linkage_code, treatment_code_type linkage_code_type, nonmfn_affected_id linkage_affected_country_id
-    FROM added_links_",user.id," 
-    WHERE live_link IS NULL;
+    FROM check_linkage_",user.id," 
+    WHERE linkage_id IS NULL;
 
     /* ADD NEW SOURCES */ 
     INSERT INTO delta_source_log (state_act_source, is_source_official) 
