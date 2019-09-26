@@ -243,12 +243,6 @@ gta_delta_upload=function(
     SELECT DISTINCT new_record_id record_id, live_link linkage_id
     FROM delta_temp_records_",user.id,";
     
-    /* ADD RECORD SOURCES */ 
-    INSERT INTO delta_record_source (record_id, source_id)
-    SELECT DISTINCT new_record_id record_id, source_id
-    FROM delta_temp_records_",user.id," a, delta_source_log b
-    WHERE a.state_act_source = b.state_act_source;
-    
     /* ADD RECORD IMPLEMENTER */ 
     INSERT INTO delta_record_implementer (record_id, implementing_jurisdiction_id)
     SELECT DISTINCT new_record_id, implementing_jurisdiction_id 
