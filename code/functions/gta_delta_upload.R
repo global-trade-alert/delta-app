@@ -173,6 +173,14 @@ gta_delta_upload=function(
     AND linklog.linkage_code_type IN (SELECT treatment_code_type FROM new_links_",user.id,")
     AND linklog.linkage_affected_country_id IN (SELECT nonmfn_affected_id FROM new_links_",user.id,"));
     
+
+    /* ADD NEW SOURCES */ 
+    INSERT INTO delta_source_log (state_act_source, is_source_official) 
+    SELECT DISTINCT state_act_source, is_source_official
+    FROM delta_temp_upload_data_",user.id," 
+    WHERE state_act_source NOT IN (SELECT DISTINCT state_act_source FROM delta_source_log);
+
+
     /* DROP AND RE-JOIN WITH NEWLY ADDED LINK IDS */
 
     DROP TABLE IF EXISTS this_links_",user.id,";
