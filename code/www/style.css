@@ -53,7 +53,6 @@ body h2 {
 .clear-both {
 	clear:both;
 }
-
 /*.shiny-notification {
      position:fixed;
      top: calc(50%);
@@ -252,11 +251,11 @@ body h2 {
 
 .content {
 	float:right;
-	width:70%;
-	max-width: calc(100% - 300px);
+	width:60%;
+	/* max-width: calc(100% - 300px); */
 	z-index:20;
 	min-width: calc(100% - 450px);
-	 padding:60px 60px 60px 60px; 
+	 padding:60px 60px 60px 60px;
 }
 */
 .content .results {
@@ -491,9 +490,9 @@ table.dataTable tr.selected td, table.dataTable td.selected {
 
 .settings {
 	float:left;
-	width:30%;
+	width:25%;
 	min-width:300px;
-	max-width:450px;
+	/* max-width:450px; */
 	height:calc(100vh - 80px);
 	border-right:1px solid #dadada;
 	position:fixed;
@@ -508,6 +507,7 @@ table.dataTable tr.selected td, table.dataTable td.selected {
 	display:flex;
 	flex:1;
 	overflow: scroll;
+	margin-bottom:80px;
 }
 
 .settings-bottom .scroll {
@@ -518,14 +518,17 @@ table.dataTable tr.selected td, table.dataTable td.selected {
 	/* padding:20px; */
 }
 
-.search-field .shiny-input-container:not(.shiny-input-container-inline) {
+.search-field .shiny-input-container:not(.shiny-input-container-inline),
+.settings-bottom .shiny-input-container:not(.shiny-input-container-inline) {
 	width:100%;
 }
+
 
 .search-field .form-control {
 	height: 100%;
 	/* padding:20px; */
 }
+
 
 .search-field #printcurrent {
 	font-size:2em;
@@ -780,6 +783,11 @@ table.dataTable tr.selected td, table.dataTable td.selected {
 	flex-grow:0;
 	background-color: #f9f9f9;
 	border-top:1px solid #dadada;
+	position: fixed;
+	bottom: 0px;
+	width: 40%;
+	border-right: 1px solid	#dadada;
+	z-index: 10;
 }
 
 .continue-button-unrelated {

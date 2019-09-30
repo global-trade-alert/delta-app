@@ -10,7 +10,7 @@ gta_delta_confirm_xlsx=function(xlsx.input){
   
   req.cols=c('treatment.area', 'source','source.official', 'author','intervention.type', 'affected.flow', 'implementation.level', 'eligible.firms',
              'implementing.jurisdiction', 'affected.code', 'affected.code.type', 'treatment.value','treatment.unit', 'treatment.code.official', 'date.implemented')
-  opt.cols=c('date.announced','implementer.end.date','affected.code.end.date','affected.country.end.date','affected.country','framework.name')
+  opt.cols=c('date.announced','announced.removal.date','implementer.end.date','affected.code.end.date','affected.country.end.date','affected.country','framework.name')
   one.value.permitted=c('treatment.area','source','source.official','author','date.implemented','date.announced')
   
   #tracks whether upload was successful or not

@@ -2,14 +2,7 @@ gta_delta_input_ids=function(
   input.df=NULL
 ){
   
-  #create ids for following if given as character
-  # a=c("implementing.jurisdiction.id", "treatment.value", "treatment.code",
-  #    "date.announced","date.implemented", "treatment.unit.id",
-  #    "treatment.code.official", "treatment.area", "treatment.code.type.id",
-  #    "intervention.type.id", "state.act.source", "is.source.official",
-  #    "author.id", "affected.flow.id", "implementation.level.id",
-  #    "eligible.firms.id","implementer.end.date","treatment.code.end.date",
-  #    "nonmfn.affected.id","nonmfn.affected.end.date", "framework.id")
+  
   
   
   
@@ -36,7 +29,7 @@ gta_delta_input_ids=function(
   library(plyr)
   library(zoo)
   library(plyr)
-  gta_sql_pool_open(table.prefix = "delta_" )
+  #gta_sql_pool_open(table.prefix = "delta_" )
   
   output=data.frame(processing.id=1:nrow(input))
   
@@ -58,12 +51,15 @@ gta_delta_input_ids=function(
   ##date.announced
   output$date.announced=as.Date(date.announced)
   
+  ##announced.removal.date
+  output$announced.removal.date=as.Date(announced.removal.date)
+  
   ##date.implemented
   output$date.implemented=as.Date(date.implemented)
   
   ##treatment.unit.id
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_unit_list WHERE (lower(level_unit) IN (%s) OR level_unit_id IN (%s))", 
-                                   rep(toString(sprintf("'%s'",tolower(treatment.unit))), 2))))
+                                   rep(toString(sprintf("'%s'",tolower(unique(treatment.unit)))), 2))))
   temp=gta_sql_get_value(sql)
   output$treatment.unit.id=mapvalues(tolower(treatment.unit),
                                      tolower(temp$level.unit),
@@ -74,18 +70,18 @@ gta_delta_input_ids=function(
   
   ##treatment.area
   sql=do.call('sprintf', as.list(c("SELECT * FROM delta_treatment_area_list WHERE (treatment_area_id IN (%s) OR lower(treatment_area_name) IN (%s))", 
-                                   rep(toString(sprintf("'%s'",tolower(treatment.area))), 2))))
+                                   rep(toString(sprintf("'%s'",tolower(unique(treatment.area)))), 2))))
   temp=gta_sql_get_value(sql)
   output$treatment.area=mapvalues(tolower(treatment.area),
-                                  tolower(temp$treatment.area.name),
-                                  temp$treatment.area.id)
+                                  temp$treatment.area.id,
+                                  tolower(temp$treatment.area.name))
   
-  ##treatment.code.type.id
-  output$treatment.code.type.id=tolower(affected.code.type)
+  ##treatment.code.type
+  output$treatment.code.type=tolower(affected.code.type)
   
   ##intervention.type.id
   sql=do.call('sprintf', as.list(c("SELECT intervention_type, intervention_type_id FROM gta_intervention_type_list WHERE (lower(intervention_type) IN (%s) OR intervention_type_id IN (%s))", 
-                                   rep(toString(sprintf("'%s'",tolower(intervention.type))), 2))))
+                                   rep(toString(sprintf("'%s'",tolower(unique(intervention.type)))), 2))))
   temp=gta_sql_get_value(sql)
   output$intervention.type.id=mapvalues(tolower(intervention.type),
                                   tolower(temp$intervention.type),
@@ -99,7 +95,7 @@ gta_delta_input_ids=function(
   
   ##author.id
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_user_log WHERE (lower(user_login) IN (%s) OR user_id IN (%s))", 
-                                   rep(toString(sprintf("'%s'",tolower(author))), 2))))
+                                   rep(toString(sprintf("'%s'",tolower(unique(author)))), 2))))
   temp=gta_sql_get_value(sql)
   output$author.id=mapvalues(tolower(author),
                              tolower(temp$user.login),
@@ -108,14 +104,14 @@ gta_delta_input_ids=function(
 
   ##affected.flow.id
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_affected_flow_list WHERE (lower(affected_flow) IN (%s) OR affected_flow_id IN (%s))", 
-                                   rep(toString(sprintf("'%s'",tolower(affected.flow))), 2))))
+                                   rep(toString(sprintf("'%s'",tolower(unique(affected.flow)))), 2))))
   temp=gta_sql_get_value(sql)
   output$affected.flow.id=mapvalues(tolower(affected.flow),
                                     tolower(temp$affected.flow),
                                     temp$affected.flow.id)
   ##implementation.level.id
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_implementation_level_list WHERE (lower(implementation_level_name) IN (%s) OR implementation_level_id IN (%s))", 
-                                   rep(toString(sprintf("'%s'",tolower(implementation.level))), 2))))
+                                   rep(toString(sprintf("'%s'",tolower(unique(implementation.level)))), 2))))
   temp=gta_sql_get_value(sql)
   output$implementation.level.id=mapvalues(tolower(implementation.level),
                                            tolower(temp$implementation.level.name),
@@ -123,7 +119,7 @@ gta_delta_input_ids=function(
   
   ##eligible.firms.id
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_eligible_firms_list WHERE (eligible_firms_id IN (%s) OR lower(eligible_firms_name) IN (%s))", 
-                                   rep(toString(sprintf("'%s'",tolower(eligible.firms))), 2))))
+                                   rep(toString(sprintf("'%s'",tolower(unique(eligible.firms)))), 2))))
   temp=gta_sql_get_value(sql)
   output$eligible.firms.id=mapvalues(tolower(eligible.firms),
                                      tolower(temp$eligible.firms.name),
@@ -136,7 +132,7 @@ gta_delta_input_ids=function(
   output$treatment.code.end.date=as.Date(affected.code.end.date)
   
   ##nonmfn.affected.id
-  output$nonmfn.affected.id=affected.country
+  output$nonmfn.affected=affected.country
   # sql=do.call('sprintf', as.list(c("SELECT jurisdiction_id, jurisdiction_name, un_code FROM gta_jurisdiction_list WHERE (un_code IN (%s) OR lower(jurisdiction_name) IN (%s))", 
   #                                  rep(toString(sprintf("'%s'",tolower(affected.country))), 2))))
   # temp=gta_sql_get_value(sql)
@@ -148,10 +144,10 @@ gta_delta_input_ids=function(
   
   ##framework.id
   sql=do.call('sprintf', as.list(c("SELECT framework_id, framework_name FROM gta_framework_log WHERE (lower(framework_name) IN (%s) OR framework_id IN (%s))", 
-                                   rep(toString(sprintf("'%s'",tolower(framework.name))), 2))))
+                                   rep(toString(sprintf("'%s'",tolower(unique(framework.name)))), 2))))
   temp=gta_sql_get_value(sql)
   
-  if(is.na(temp)==F){
+  if(nrow(temp)!=0){
     
     
     output$framework.id=mapvalues(tolower(framework.name),
