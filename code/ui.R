@@ -32,94 +32,144 @@ ui <- fluidPage(
                                                        tags$li(class="active check-suggestions",
                                                                HTML("<a data-toggle='tab' href='#search'>Tariff<br/>Search Settings</a>")
                                                        ),
+                                                       tags$li(class="queryxlsx",
+                                                               HTML("<a data-toggle='tab' href='#queryxlsx'> Excel Query </a>")
+                                                       ),
                                                        tags$li(class="upload",
                                                                HTML("<a data-toggle='tab' href='#upload'> Upload data </a>")
                                                        )))),
                              tags$div(class="settings-bottom",
                                       # tags$div(class="scroll",
-                                    tags$div(class="tab-pane active fade in", id="search",
-                                        column(width=12,
-                                               column(width=6,
-                                               tags$div(class="suggestions",
-                                                        textAreaInput("treatment.codes",
-                                                                      label = "Treatment code input (csv).",
-                                                                      value = '900630,90240,10121',
-                                                                      width = '200px',
-                                                                      rows = 2))),
-                                               column(width=5,
-                                               tags$div(class="suggestions",
-                                                        selectInput("treatment.code.type",
-                                                                    "Treatment area",
-                                                                    choices=c('hs','cpc'),
-                                                                    selected='hs',
-                                                                    width='70px'))),
+                                      tags$div(class="tab-pane active fade in", id="search",
                                                column(width=12,
-                                                        tags$div(class="suggestions",
-                                                                 multiInput("implementing.jurisdiction",
-                                                                            "Restrict implementers",
-                                                                            choices = gta_sql_get_value(paste('select distinct `jurisdiction_name` from gta_jurisdiction_list union',
-                                                                                                              'select distinct `jurisdiction_group_name` from gta_jurisdiction_group_list')),
-                                                                            selected = c('Angola','Argentina','Algeria','Albania')))),
-                                               column(width=12,
-                                                        tags$div(class="suggestions",
-                                                                 multiInput("affected.jurisdiction",
-                                                                            "Restrict affected countries",
-                                                                            choices = c('MFN',gta_sql_get_value(paste('select distinct `jurisdiction_name` from gta_jurisdiction_list union',
-                                                                                                              'select distinct `jurisdiction_group_name` from gta_jurisdiction_group_list'))),
-                                                                            selected = 'MFN'))),
-                                               column(width=12,
-                                                        column(width=6,
-                                                        tags$div(class="suggestions",
-                                                                 dateInput("end.date",
-                                                                           "End date",
-                                                                           format='yyyy-mm-dd',
-                                                                           value='2014-02-01',
-                                                                           width='165px'))),
-                                                        column(width=6,
-                                                        tags$div(class="suggestions",
-                                                                 selectInput("treatment.area",
-                                                                           "Treatment area",
-                                                                           choices=gta_sql_get_value('select distinct `treatment_area_name` from delta_treatment_area_list'),
-                                                                           selected='tariff',
-                                                                           width='165px'))),
-                                                      hidden(actionButton('clear.xlsx', 'Clear xlsx input'))
-                                               ),
-                                               
-                                               column(width=5,
-                                                      tags$div(class="suggestions",
-                                                               selectInput("affected.flow",
-                                                                           "Affected flow",
-                                                                           choices=gta_sql_get_value('select distinct `affected_flow` from gta_affected_flow_list'),
-                                                                           selected=NULL,
-                                                                           multiple=T,
-                                                                           width='165px')))
+                                                      column(width=6,
+                                                             tags$div(class="suggestions",
+                                                                      textAreaInput("treatment.codes",
+                                                                                    label = "Treatment code input (csv).",
+                                                                                    value = '',
+                                                                                    width = '200px',
+                                                                                    rows = 2))),
+                                                      column(width=5,
+                                                             tags$div(class="suggestions",
+                                                                      selectInput("treatment.code.type",
+                                                                                  "Treatment area",
+                                                                                  choices=c('hs','cpc'),
+                                                                                  selected='hs',
+                                                                                  width='70px'))),
+                                                      column(width=12,
+                                                             column(6,
+                                                             tags$div(class="suggestions",
+                                                                      textAreaInput("new.treatment.value",
+                                                                                    label = "(Optional) new treatment value",
+                                                                                    width = '50px',
+                                                                                    rows = 1))),
+                                                             column(width=6,
+                                                             tags$div(class="suggestions",
+                                                                      selectInput("new.treatment.unit",
+                                                                                  "(Optional) new treatment unit",
+                                                                                  choices=c(NA,gta_sql_get_value('select distinct `level_unit` from gta_unit_list')),
+                                                                                  selected=NA,
+                                                                                  width='165px')))),
+                                                      column(width=12,
+                                                             tags$div(class="suggestions",
+                                                                      multiInput("implementing.jurisdiction",
+                                                                                 "Restrict implementers",
+                                                                                 choices = gta_sql_get_value(paste('select distinct `jurisdiction_name` from gta_jurisdiction_list union',
+                                                                                                                   'select distinct `jurisdiction_group_name` from gta_jurisdiction_group_list')),
+                                                                                 selected = c('Argentina')))),
+                                                      column(width=12,
+                                                             tags$div(class="suggestions",
+                                                                      multiInput("affected.jurisdiction",
+                                                                                 "Restrict affected countries",
+                                                                                 choices = c('MFN'), #,gta_sql_get_value(paste('select distinct `jurisdiction_name` from gta_jurisdiction_list union',
+                                                                                                   #                        'select distinct `jurisdiction_group_name` from gta_jurisdiction_group_list'
+                                                                                                                           
+                                                                                 selected = 'MFN'))),
+                                                      column(width=12,
+                                                             column(width=6,
+                                                                    tags$div(class="suggestions",
+                                                                             dateInput("end.date",
+                                                                                       "Date",
+                                                                                       format='yyyy-mm-dd',
+                                                                                       value=NULL,
+                                                                                       width='165px'))),
+                                                             column(width=6,
+                                                                    tags$div(class="suggestions",
+                                                                             selectInput("treatment.area",
+                                                                                         "Treatment area",
+                                                                                         choices=gta_sql_get_value('select distinct `treatment_area_name` from delta_treatment_area_list'),
+                                                                                         selected='tariff',
+                                                                                         width='165px'))),
+                                                             hidden(actionButton('clear.xlsx', 'Clear xlsx input'))
+                                                      ),
+                                                      hidden(
+                                                      column(width=5,
+                                                             tags$div(class="suggestions",
+                                                                      selectInput("affected.flow",
+                                                                                  "Affected flow",
+                                                                                  choices=gta_sql_get_value('select distinct `affected_flow` from gta_affected_flow_list'),
+                                                                                  selected=NULL,
+                                                                                  multiple=T,
+                                                                                  width='165px')))
+                                                      )
                                                )
                                       ),
-                                    tags$div(class="tab-pane fade", id="upload",
-                                             column(width=12,
-                                                    tags$div(class="suggestions",
-                                                   tags$div(class="upload",
-                                                            fileInput('excel.query', 'Choose xlsx or csv file (max 2gb)',
-                                                                      accept = c(".xlsx",".csv"))
-                                                   )
-                                             ))
-                                      
+                                      tags$div(class="tab-pane fade", id="queryxlsx",
+                                               column(width=12,
+                                                      tags$div(class="suggestions",
+                                                               tags$div(class="queryxlsx",
+                                                                        fileInput('excel.query', 'Choose xlsx file to use to query.',
+                                                                                  accept = c(".xlsx",".csv"))
+                                                               )
+                                                      ),
+                                                      hidden(actionButton('clear.query.xlsx', 'Clear xlsx input')),
+                                                      column(width=12,
+                                                             tags$div(class="suggestions",
+                                                                      tags$div(class="upload",
+                                                      downloadButton('dl.xlsx.query.template', 'Download xlsx query template')
+                                                                      )))
+                                                      )
+                                               
                                       ),
-                             
-                             tags$div(class="continue-button",
-                                      column(width=12,
-                                      actionButton("submit.query",
-                                                   "Submit query")))
-                             
-                             
-                             
-                    ))),
+                                      tags$div(class="tab-pane fade", id="upload",
+                                               column(width=12,
+                                                      tags$div(class="suggestions",
+                                                               tags$div(class="upload",
+                                                                        fileInput('excel.upload', 'Choose xlsx or csv file (max 2gb)',
+                                                                                  accept = c(".xlsx"))
+                                                               )
+                                                      )),
+                                               column(width=12,
+                                                      tags$div(class="suggestions",
+                                                               tags$div(class="upload",
+                                                                        textInput('upload.name', 'Choose a name for the upload')
+                                                               )
+                                                      )),
+                                               column(width=12,
+                                                      tags$div(class="suggestions",
+                                                               tags$div(class="upload",
+                                               downloadButton('dl.upload.template', 'Download upload template')
+                                                               )))
+                                               
+                                               
+                                      ),
+                                      
+                                      tags$div(class="continue-button",
+                                               column(width=12,
+                                                      actionButton("submit.query",
+                                                                   "Submit query")))
+                                      
+                                      
+                                      
+                             ))),
            
            
            tags$div(class="content",
                     tags$div(class="results",
                              useShinyalert(),
-                             uiOutput('display'),
+                             downloadButton("dl", "Download"),
+                             uiOutput('sorted.display'),
+                             uiOutput('unsorted.display'),
                              dataTableOutput('unrecognized.variables')
                     )
            )
