@@ -186,10 +186,15 @@ server <- function(input, output, session) {
                                    db.connection='pool',
                                    user=input$users))
       
-      if(!all(is.na(as.data.frame(RV$display[[1]])$new.treatment.value)&is.na(as.data.frame(RV$display[[1]])$new.treatment.unit.id))){
+      display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision")
+      
+      if(all(is.na(as.data.frame(RV$display[[1]][,c("Prior value","Prior unit","Prior date")])))){
+        showNotification('sadly no rows matching your query were found :(', duration=10)
+      } else if(!all(is.na(as.data.frame(RV$display[[1]])[,c('New value','New unit')]))){
         showElement('sorted.display')
         hideElement('unsorted.display')
         
+        query.cols=c('implementing.jurisdiction','')
         output$sorted.display <- renderUI({
           nTabs = length(RV$display)
           # create tabPanel with datatable in it
@@ -217,9 +222,7 @@ server <- function(input, output, session) {
           })
           
           output[[paste0("datatable_",i,"_1")]] <- DT::renderDataTable(
-            exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Decrease')[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                                                   'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                                                   'live.treatment.value','live.treatment.unit.id','date.implemented')],
+            exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Decrease', select=display.cols),
             rownames = F,
             options = list(
               pageLength = 30,
@@ -233,9 +236,7 @@ server <- function(input, output, session) {
           )
           
           output[[paste0("datatable_",i,"_2")]] <- DT::renderDataTable(
-            exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Increase')[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                                                   'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                                                   'live.treatment.value','live.treatment.unit.id','date.implemented')],
+            exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Increase', select=display.cols),
             rownames = F,
             options = list(
               pageLength = 30,
@@ -249,9 +250,7 @@ server <- function(input, output, session) {
           )
           
           output[[paste0("datatable_",i,"_3")]] <- DT::renderDataTable(
-            exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Unclear')[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                                                  'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                                                  'live.treatment.value','live.treatment.unit.id','date.implemented')],
+            exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Unclear', select=display.cols),
             rownames = F,
             options = list(
               pageLength = 30,
@@ -265,9 +264,7 @@ server <- function(input, output, session) {
           )
           
           output[[paste0("datatable_",i,"_4")]] <- DT::renderDataTable(
-            exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Unchanged')[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                                                    'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                                                    'live.treatment.value','live.treatment.unit.id','date.implemented')],
+            exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Unchanged', select=display.cols),
             rownames = F,
             options = list(
               pageLength = 30,
@@ -299,9 +296,7 @@ server <- function(input, output, session) {
         
         lapply(seq_len(length(RV$display)), function(i) {
           output[[paste0("unsorted_datatable_",i)]] <- DT::renderDataTable(
-            exp=as.data.frame(RV$display[[i]])[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                  'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                  'live.treatment.value','live.treatment.unit.id','date.implemented')],
+            exp=subset(as.data.frame(RV$display[[i]]), select=display.cols[!display.cols %in% c("New value","New unit")]),
             rownames = F,
             options = list(
               pageLength = 30,
@@ -335,11 +330,10 @@ server <- function(input, output, session) {
   output$dl <- downloadHandler(
     filename = function() {paste0(Sys.Date(),' query.xlsx')},
     content = function(file) {
+      keep.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision")
       
-      if(!all(is.na(as.data.frame(RV$display[[1]])$new.treatment.value)&is.na(as.data.frame(RV$display[[1]])$new.treatment.unit.id))){
-        keep.cols=c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                    'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                    'live.treatment.value','live.treatment.unit.id','date.implemented')
+      if(!all(is.na(as.data.frame(RV$display[[1]][,c("New value","New unit")])))){
+        
         out.list=list(Decrease=subset(as.data.frame(RV$display[[1]]), sort.result=='Decrease', select=keep.cols),
                       Increase=subset(as.data.frame(RV$display[[1]]), sort.result=='Increase', select=keep.cols),
                       Unclear=subset(as.data.frame(RV$display[[1]]), sort.result=='Unclear', select=keep.cols),
@@ -349,9 +343,8 @@ server <- function(input, output, session) {
         
       
       } else {
-        write.xlsx(as.data.frame(RV$display[[1]])[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code','treatment.code.type',
-                                                     'treatment.area','live.treatment.value','live.treatment.unit.id','date.implemented')], file,
-                   sheetName='query result')
+        write.xlsx(as.data.frame(RV$display[[1]])[,keep.cols[!keep.cols %in% c("New value","New unit")]], file,
+                   sheetName='Query Result')
       }
       
     } 
@@ -359,9 +352,10 @@ server <- function(input, output, session) {
   
   #query display
   observeEvent(input$submit.query, {
+    if(length(input$date)==0) cutoff.date=NA else cutoff.date=input$date
     RV$display<<-list(display=gta_delta_query(expand=T,
                                             implementer=input$implementing.jurisdiction,
-                                            cutoff.date=input$end.date,
+                                            cutoff.date=cutoff.date,
                                             new.treatment.value=as.numeric(input$new.treatment.value),
                                             new.treatment.unit=input$new.treatment.unit,
                                             treatment.area=input$treatment.area,
@@ -372,9 +366,11 @@ server <- function(input, output, session) {
                                             user=input$users)
                     )
     
-    test<<-RV$display
+    display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision")
     
-    if(!all(is.na(as.data.frame(RV$display[[1]])$new.treatment.value)&is.na(as.data.frame(RV$display[[1]])$new.treatment.unit.id))){
+    if(all(is.na(as.data.frame(RV$display[[1]][,c("Prior value","Prior unit","Prior date")])))){
+      showNotification('sadly no rows matching your query were found', duration=10)
+    } else if(!all(is.na(as.data.frame(RV$display[[1]])[,c('New value','New unit')]))){
     showElement('sorted.display')
     hideElement('unsorted.display')
       
@@ -405,9 +401,7 @@ server <- function(input, output, session) {
       })
 
       output[[paste0("datatable_",i,"_1")]] <- DT::renderDataTable(
-        exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Decrease')[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                                               'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                                               'live.treatment.value','live.treatment.unit.id','date.implemented')],
+        exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Decrease', select=display.cols),
         rownames = F,
         options = list(
           pageLength = 30,
@@ -421,9 +415,7 @@ server <- function(input, output, session) {
       )
 
       output[[paste0("datatable_",i,"_2")]] <- DT::renderDataTable(
-        exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Increase')[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                                               'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                                               'live.treatment.value','live.treatment.unit.id','date.implemented')],
+        exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Increase', select=display.cols),
         rownames = F,
         options = list(
           pageLength = 30,
@@ -437,9 +429,7 @@ server <- function(input, output, session) {
       )
 
       output[[paste0("datatable_",i,"_3")]] <- DT::renderDataTable(
-        exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Unclear')[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                                               'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                                               'live.treatment.value','live.treatment.unit.id','date.implemented')],
+        exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Unclear', select=display.cols),
         rownames = F,
         options = list(
           pageLength = 30,
@@ -453,9 +443,7 @@ server <- function(input, output, session) {
       )
 
       output[[paste0("datatable_",i,"_4")]] <- DT::renderDataTable(
-        exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Unchanged')[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                                               'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                                               'live.treatment.value','live.treatment.unit.id','date.implemented')],
+        exp=subset(as.data.frame(RV$display[[i]]), sort.result=='Unchanged', select=display.cols),
         rownames = F,
         options = list(
           pageLength = 30,
@@ -487,9 +475,7 @@ server <- function(input, output, session) {
       
       lapply(seq_len(length(RV$display)), function(i) {
         output[[paste0("unsorted_datatable_",i)]] <- DT::renderDataTable(
-          exp=as.data.frame(RV$display[[i]])[,c('implementing.jurisdiction','affected.jurisdiction','treatment.code',
-                                                'treatment.code.type','treatment.area','new.treatment.value','new.treatment.unit.id',
-                                                'live.treatment.value','live.treatment.unit.id','date.implemented')],
+          exp=subset(as.data.frame(RV$display[[i]]), select=display.cols[!display.cols %in% c("New value","New unit")]),
           rownames = F,
           options = list(
             pageLength = 30,

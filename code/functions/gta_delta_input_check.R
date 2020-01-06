@@ -296,7 +296,9 @@ gta_delta_input_check=function(
   
   df.affected.code=data.frame(affected.code=as.numeric(gsub('\\D','',affected.code)),
                               affected.code.type=affected.code.type)
+  # df.affected.code$affected.code[df.affected.code$affected.code.type=='hs']=str_remove(df.affected.code$affected.code[df.affected.code$affected.code.type=='hs'], "^0+")
 
+  
   if(nrow(subset(df.affected.code, !nchar(affected.code) %in% c(2,3) & affected.code.type=='cpc'))>0){
     fatal=T
     unrec.aff.code=c(unrec.aff.code,subset(df.affected.code, !nchar(affected.code) %in% c(2,3) & affected.code.type=='cpc')$affected.code)
@@ -305,16 +307,19 @@ gta_delta_input_check=function(
                     sep='')
   }
   
-  if(nrow(subset(df.affected.code, (nchar(affected.code)<3 | nchar(affected.code)>6) & affected.code.type=='hs'))>0){
+  if(nrow(subset(df.affected.code, nchar(affected.code)<3 & affected.code.type=='hs'))>0){
     fatal=T
-    unrec.aff.code=c(unrec.aff.code,subset(df.affected.code, (nchar(affected.code)<3 | nchar(affected.code)>6) & affected.code.type=='hs')$affected.code)
+    unrec.aff.code=c(unrec.aff.code,subset(df.affected.code, nchar(affected.code)<3 & affected.code.type=='hs')$affected.code)
     error.msg=paste(error.msg,
-                    "Hs codes must be between 4(3) and 6(5) digits long. Multiple entries in a single cell are permissible, but must be separated by a semi-colon (;). \n\n",
+                    "Hs codes must be at least 4(3) digits long. Multiple entries in a single cell are permissible, but must be separated by a semi-colon (;). \n\n",
                     sep='')
   }
   
 
   hs.codes=subset(df.affected.code, affected.code.type=='hs')$affected.code
+  hs.codes[which(nchar(hs.codes) %% 2 == 0)]=str_sub(hs.codes[which(nchar(hs.codes) %% 2 == 0)],1,6)
+  hs.codes[which(nchar(hs.codes) %% 2 == 1)]=str_sub(hs.codes[which(nchar(hs.codes) %% 2 == 1)],1,5)
+  hs.codes=as.numeric(hs.codes)
   if(is.null(gta_hs_code_check(hs.codes))){
     fatal=T
     error <- capture.output({

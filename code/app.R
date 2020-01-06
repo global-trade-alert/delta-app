@@ -1,3 +1,4 @@
+# gtasql::gta_sql_kill_connections()
 rm(list=ls())
 
 library(shiny)
@@ -20,34 +21,33 @@ library(readxl)
 library(shinyalert)
 library(stringr)
 library(stringi)
+library(openxlsx)
 
-# library(RMySQL)  
-# 
-# killDbConnections <- function () {
-#   
-#   all_cons <- dbListConnections(MySQL())
-#   
-#   print(all_cons)
-#   
-#   for(con in all_cons)
-#     +  dbDisconnect(con)
-#   
-#   print(paste(length(all_cons), " connections killed."))
-#   
-# }
-# killDbConnections()
+#2gb file allowed§
+options(shiny.maxRequestSize=2000*1024^2)
 
+# setwd("/home/rstudio/Dropbox/GTA cloud")
 gta_setwd()
 app.path<<-'17 Shiny/6 delta app/code/'
 source(paste0(app.path,'server.R'))
 source(paste0(app.path,'ui.R'), local=T)
 source(paste0(app.path,'functions/gta_delta_confirm_xlsx.R'))
 source(paste0(app.path,'functions/gta_delta_input_check.R'))
+source(paste0(app.path,'functions/gta_delta_input_ids.R'))
+source(paste0(app.path,'functions/gta_delta_input_upload.R'))
+source(paste0(app.path,'functions/gta_delta_get_jurisdiction_id.R'))
+source(paste0(app.path,'functions/gta_delta_query.R'))
+
 
 shinyApp(ui,
          server,
          onStart = function() {
-           gta_sql_pool_open(table.prefix = 'delta_',got.keyring = F)
+           gta_sql_pool_open(table.prefix = 'delta_',
+                             db.title="ricardodev",
+                             db.host = gta_pwd("ricardodev")$host,
+                             db.name = gta_pwd("ricardodev")$name,
+                             db.user = gta_pwd("ricardodev")$user,
+                             db.password = gta_pwd("ricardodev")$password)
            cat("Opening SQL connection\n")
            onStop(function() {
              gta_sql_pool_close()

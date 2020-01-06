@@ -1,4 +1,9 @@
-gta_sql_pool_open(table.prefix = 'delta_', got.keyring=F)
+gta_sql_pool_open(table.prefix = 'delta_',
+                  db.title="ricardodev",
+                  db.host = gta_pwd("ricardodev")$host,
+                  db.name = gta_pwd("ricardodev")$name,
+                  db.user = gta_pwd("ricardodev")$user,
+                  db.password = gta_pwd("ricardodev")$password)
 
 addResourcePath(prefix = 'www', directoryPath = paste0(app.path,'www'))
 
@@ -88,11 +93,11 @@ ui <- fluidPage(
                                                       column(width=12,
                                                              column(width=6,
                                                                     tags$div(class="suggestions",
-                                                                             dateInput("end.date",
+                                                                             dateInput("date",
                                                                                        "Date",
                                                                                        format='yyyy-mm-dd',
-                                                                                       value=NULL,
-                                                                                       width='165px'))),
+                                                                                       value=NA,
+                                                                                       width='300px'))),
                                                              column(width=6,
                                                                     tags$div(class="suggestions",
                                                                              selectInput("treatment.area",
