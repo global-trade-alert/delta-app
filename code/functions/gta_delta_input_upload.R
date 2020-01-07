@@ -78,13 +78,11 @@ gta_delta_upload=function(
                                        coarse.code.type="hs"))
     }
     
-    coarse$treatment.code=NULL
-    coarse$coarse.code=NA
-    coarse$coarse.code.type=NA
-    coarse=merge(coarse, expanded.output, by="processing.id", all.x=T)
-    
+    coarse=merge(subset(coarse, select=names(coarse)[!names(coarse) %in% c('treatment.code','coarse.code','coarse.code.type')]),
+                 expanded.output, by="processing.id", all.x=T)
+    coarse$processing.id=NULL 
     delta.data=rbind(subset(delta.data, !(nchar(delta.data$treatment.code) < 5 & delta.data$treatment.code.type=='hs')),
-                     expanded.output)
+                     subset(coarse, select=names(delta.data)))
     
     rm(expanded.output, expanded.codes)
     
