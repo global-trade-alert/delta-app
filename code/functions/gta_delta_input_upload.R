@@ -209,7 +209,6 @@ gta_delta_upload=function(
     WHERE treatment_value = live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
     
-
     /* add source and treatment area id */
     ALTER TABLE delta_temp_upload_data_29
     ADD COLUMN source_id INT NULL,
@@ -350,7 +349,7 @@ gta_delta_upload=function(
     DELETE FROM delta_temp_upload_data_",user.id,"
     WHERE treatment_value != live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
-  
+
     /* ADD INTO LOG OF APPROPRIATE AREA*/
     INSERT INTO delta_tariff_log (record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official, announced_as_temporary)
     SELECT DISTINCT record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official,
