@@ -186,7 +186,7 @@ server <- function(input, output, session) {
                                    db.connection='pool',
                                    user=input$users))
       
-      display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision")
+      display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision","Is mfn")
       
       if(all(is.na(as.data.frame(RV$display[[1]][,c("Prior value","Prior unit","Prior date")])))){
         showNotification('sadly no rows matching your query were found :(', duration=10)
@@ -194,7 +194,6 @@ server <- function(input, output, session) {
         showElement('sorted.display')
         hideElement('unsorted.display')
         
-        query.cols=c('implementing.jurisdiction','')
         output$sorted.display <- renderUI({
           nTabs = length(RV$display)
           # create tabPanel with datatable in it
@@ -330,7 +329,7 @@ server <- function(input, output, session) {
   output$dl <- downloadHandler(
     filename = function() {paste0(Sys.Date(),' query.xlsx')},
     content = function(file) {
-      keep.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision")
+      keep.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision","Is mfn")
       
       if(!all(is.na(as.data.frame(RV$display[[1]][,c("New value","New unit")])))){
         
@@ -366,7 +365,7 @@ server <- function(input, output, session) {
                                             user=input$users)
                     )
     
-    display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision")
+    display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision","Is mfn")
     
     if(all(is.na(as.data.frame(RV$display[[1]][,c("Prior value","Prior unit","Prior date")])))){
       showNotification('sadly no rows matching your query were found', duration=10)

@@ -5,8 +5,6 @@ gta_delta_upload=function(
   db.connection='pool'
 ){
   
-  source('17 Shiny/6 delta app/code/functions/gta_delta_get_jurisdiction_id.R')
-  
   necessary.variables=c("implementing.jurisdiction", "treatment.value", "treatment.code", 
                         "date.announced","date.implemented", "announced.removal.date", "treatment.unit.id",
                         "treatment.code.official", "treatment.area", "treatment.code.type",
@@ -211,6 +209,18 @@ gta_delta_upload=function(
     WHERE treatment_value = live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
     
+
+    /* add source and treatment area id */
+    ALTER TABLE delta_temp_upload_data_29
+    ADD COLUMN source_id INT NULL,
+    ADD treatment_area_id INT NULL;
+    
+    UPDATE delta_temp_upload_data_29 up_data, delta_source_log, delta_treatment_area_list
+    SET up_data.treatment_area_id = delta_treatment_area_list.treatment_area_id,
+    up_data.source_id = delta_source_log.source_id
+    WHERE up_data.state_act_source = delta_source_log.state_act_source
+    AND up_data.treatment_area = delta_treatment_area_list.treatment_area_name;
+
     /* add to nonmfn state log */ 
     INSERT INTO delta_nonmfn_state_log (linkage_id, treatment_area, nonmfn_state_date, nonmfn_state, source_id, state_redundant) 
     SELECT linkage_id, treatment_area, date_implemented nonmfn_state_date, 1 AS nonmfn_state, source_id, 0 AS state_redundant
@@ -226,16 +236,6 @@ gta_delta_upload=function(
     AND (treatment_value = live_treatment_value OR live_treatment_value IS NULL)
     AND (treatment_unit_id = live_treatment_unit_id OR live_treatment_unit_id IS NULL)
     ORDER BY linkage_id;
-    
-    ALTER TABLE delta_temp_upload_data_",user.id,"
-    ADD COLUMN source_id INT NULL,
-    ADD treatment_area_id INT NULL;
-    
-    UPDATE delta_temp_upload_data_",user.id," up_data, delta_source_log, delta_treatment_area_list
-    SET up_data.treatment_area_id = delta_treatment_area_list.treatment_area_id,
-    up_data.source_id = delta_source_log.source_id
-    WHERE up_data.state_act_source = delta_source_log.state_act_source
-    AND up_data.treatment_area = delta_treatment_area_list.treatment_area_name;
     
     DROP TABLE IF EXISTS delta_temp_records_29 ;
     
