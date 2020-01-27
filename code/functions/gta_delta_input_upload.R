@@ -209,7 +209,6 @@ gta_delta_upload=function(
     WHERE treatment_value = live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
     
-    
     /* add source and treatment area id */
     ALTER TABLE delta_temp_upload_data_29
     ADD COLUMN source_id INT NULL,
@@ -220,7 +219,7 @@ gta_delta_upload=function(
     up_data.source_id = delta_source_log.source_id
     WHERE up_data.state_act_source = delta_source_log.state_act_source
     AND up_data.treatment_area = delta_treatment_area_list.treatment_area_name;
-    
+
     /* add to nonmfn state log */ 
     INSERT INTO delta_nonmfn_state_log (linkage_id, treatment_area, nonmfn_state_date, nonmfn_state, source_id, state_redundant) 
     SELECT linkage_id, treatment_area, date_implemented nonmfn_state_date, 1 AS nonmfn_state, source_id, 0 AS state_redundant
@@ -350,7 +349,7 @@ gta_delta_upload=function(
     DELETE FROM delta_temp_upload_data_",user.id,"
     WHERE treatment_value != live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
-    
+
     /* ADD INTO LOG OF APPROPRIATE AREA*/
     INSERT INTO delta_tariff_log (record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official, announced_as_temporary)
     SELECT DISTINCT record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official,
@@ -363,7 +362,7 @@ gta_delta_upload=function(
     
     "
   )
-  
+
   #return(cat(sql.statement))
   gta_sql_multiple_queries(sql.statement,output.queries = 1, show.time = T)
   
