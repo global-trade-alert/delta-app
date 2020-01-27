@@ -5,8 +5,6 @@ gta_delta_upload=function(
   db.connection='pool'
 ){
   
-  source('17 Shiny/6 delta app/code/functions/gta_delta_get_jurisdiction_id.R')
-  
   necessary.variables=c("implementing.jurisdiction", "treatment.value", "treatment.code", 
                         "date.announced","date.implemented", "announced.removal.date", "treatment.unit.id",
                         "treatment.code.official", "treatment.area", "treatment.code.type",
@@ -78,13 +76,11 @@ gta_delta_upload=function(
                                        coarse.code.type="hs"))
     }
     
-    coarse$treatment.code=NULL
-    coarse$coarse.code=NA
-    coarse$coarse.code.type=NA
-    coarse=merge(coarse, expanded.output, by="processing.id", all.x=T)
-    
+    coarse=merge(subset(coarse, select=names(coarse)[!names(coarse) %in% c('treatment.code','coarse.code','coarse.code.type')]),
+                 expanded.output, by="processing.id", all.x=T)
+    coarse$processing.id=NULL 
     delta.data=rbind(subset(delta.data, !(nchar(delta.data$treatment.code) < 5 & delta.data$treatment.code.type=='hs')),
-                     expanded.output)
+                     subset(coarse, select=names(delta.data)))
     
     rm(expanded.output, expanded.codes)
     
@@ -213,15 +209,33 @@ gta_delta_upload=function(
     WHERE treatment_value = live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
     
-    ALTER TABLE delta_temp_upload_data_",user.id,"
+    
+    /* add source and treatment area id */
+    ALTER TABLE delta_temp_upload_data_29
     ADD COLUMN source_id INT NULL,
     ADD treatment_area_id INT NULL;
     
-    UPDATE delta_temp_upload_data_",user.id," up_data, delta_source_log, delta_treatment_area_list
+    UPDATE delta_temp_upload_data_29 up_data, delta_source_log, delta_treatment_area_list
     SET up_data.treatment_area_id = delta_treatment_area_list.treatment_area_id,
     up_data.source_id = delta_source_log.source_id
     WHERE up_data.state_act_source = delta_source_log.state_act_source
     AND up_data.treatment_area = delta_treatment_area_list.treatment_area_name;
+    
+    /* add to nonmfn state log */ 
+    INSERT INTO delta_nonmfn_state_log (linkage_id, treatment_area, nonmfn_state_date, nonmfn_state, source_id, state_redundant) 
+    SELECT linkage_id, treatment_area, date_implemented nonmfn_state_date, 1 AS nonmfn_state, source_id, 0 AS state_redundant
+    FROM delta_temp_upload_data_",user.id," 
+    WHERE nonmfn_affected IS NOT NULL
+    AND (treatment_value = live_treatment_value OR live_treatment_value IS NULL)
+    AND (treatment_unit_id = live_treatment_unit_id OR live_treatment_unit_id IS NULL)
+    UNION
+    SELECT linkage_id, treatment_area, nonmfn_affected_end_date nonmfn_state_date, 0 AS nonmfn_state, source_id, 0 AS state_redundant
+    FROM delta_temp_upload_data_",user.id," 
+    WHERE nonmfn_affected IS NOT NULL
+    AND nonmfn_affected_end_date IS NOT NULL
+    AND (treatment_value = live_treatment_value OR live_treatment_value IS NULL)
+    AND (treatment_unit_id = live_treatment_unit_id OR live_treatment_unit_id IS NULL)
+    ORDER BY linkage_id;
     
     DROP TABLE IF EXISTS delta_temp_records_29 ;
     
@@ -337,19 +351,6 @@ gta_delta_upload=function(
     WHERE treatment_value != live_treatment_value
     AND treatment_unit_id = live_treatment_unit_id;
     
-    /* ADD INTO NONMFN STATE LOG */
-    /* FIND OUT HOW TO GET STATE REDUNDANT, FOR TIME BEING JUST ASSUMED TO BE 0 */
-    INSERT INTO delta_nonmfn_state_log (linkage_id, treatment_area, nonmfn_state_date, nonmfn_state, source_id, state_redundant)
-    SELECT linkage_id, treatment_area, date_implemented nonmfn_state_date, 1 AS nonmfn_state, source_id, 0 AS state_redundant
-    FROM delta_temp_upload_data_",user.id,"  a
-    WHERE nonmfn_affected IS NOT NULL
-    AND nonmfn_affected_end_date IS NULL
-    UNION
-    SELECT linkage_id, treatment_area, nonmfn_affected_end_date nonmfn_state_date, 0 AS nonmfn_state, source_id, 0 AS state_redundant
-    FROM delta_temp_upload_data_",user.id,"  a
-    WHERE nonmfn_affected IS NOT NULL
-    AND nonmfn_affected_end_date IS NOT NULL;
-    
     /* ADD INTO LOG OF APPROPRIATE AREA*/
     INSERT INTO delta_tariff_log (record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official, announced_as_temporary)
     SELECT DISTINCT record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official,
@@ -357,12 +358,12 @@ gta_delta_upload=function(
     FROM delta_temp_upload_data_",user.id,";
     
     DROP TABLE delta_temp_upload_data_",user.id," ;
-
-
-
+    
+    
+    
     "
   )
-
+  
   #return(cat(sql.statement))
   gta_sql_multiple_queries(sql.statement,output.queries = 1, show.time = T)
   
