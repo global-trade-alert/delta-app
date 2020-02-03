@@ -27,33 +27,22 @@ gta_delta_upload=function(
     
   } else {
     
+
+    input.log.update<<-data.frame(user.id=user.id,
+                                  input.date=substr(as.POSIXct(format(Sys.time()),tz="CET"),1,19), #format time as CET
+                                  input.name=input.name,
+                                  input.state='incomplete',
+                                  stringsAsFactors = F)
     
-    input.id.query  <- paste("SELECT input_id
-                             FROM delta_input_log
-                             WHERE user_id = ",user.id,"
-                             AND input_name = '",input.name,"';", sep="")
-    
-    this.input.id=gta_sql_get_value(query=input.id.query,
-                                    db.connection=db.connection)
-    
-    rm(input.id.query)
-    
-    
-    if(is.na(this.input.id)){
+    this.input.id=gta_sql_append_table(append.table = "input.log",
+                                       append.by.df = "input.log.update",
+                                       get.id = "input.id",
+                                       db.connection=db.connection)
       
-      input.log.update<<-data.frame(user.id=user.id,
-                                    input.date=Sys.Date(),
-                                    input.name=input.name,
-                                    stringsAsFactors = F)
-      
-      this.input.id=gta_sql_append_table(append.table = "input.log",
-                                         append.by.df = "input.log.update",
-                                         get.id = "input.id",
-                                         db.connection=db.connection)
-      
-    }
     
     
+    delta.data$input.id=this.input.id
+       
   }
   
   ## expanding coarse.codes
@@ -351,15 +340,20 @@ gta_delta_upload=function(
     AND treatment_unit_id = live_treatment_unit_id;
 
     /* ADD INTO LOG OF APPROPRIATE AREA*/
-    INSERT INTO delta_tariff_log (record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official, announced_as_temporary)
-    SELECT DISTINCT record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official,
+    INSERT INTO delta_tariff_log (input_id, record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official, announced_as_temporary)
+    SELECT DISTINCT input_id, record_id, date_implemented, treatment_code, treatment_code_type, treatment_value, treatment_unit_id, treatment_code_official,
     (CASE WHEN nonmfn_affected_end_date IS NOT NULL THEN 1 ELSE 0 END) AS announced_as_temporary
     FROM delta_temp_upload_data_",user.id,";
     
     DROP TABLE delta_temp_upload_data_",user.id," ;
     
-    
-    
+    /* UPDATE INPUT LOG INPUT_STATE TO COMPLETE */ 
+    UPDATE delta_input_log
+    SET input_state = 'complete'
+    WHERE input_id = ",this.input.id,";
+
+
+
     "
   )
 
