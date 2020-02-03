@@ -30,7 +30,7 @@
 # new.treatment.value=input$new.treatment.value#rep(NA,10)
 # new.treatment.unit=input$new.treatment.unit#rep(NA,10)
 # treatment.area=input$treatment.area
-# treatment.code=input$treatment.code
+# treatment.code=875250
 # treatment.code=as.numeric(plyr::mapvalues(treatment.code,10121,101))
 # treatment.code.type=input$treatment.code.type
 # affected.country=input$affected.jurisdiction
@@ -148,6 +148,7 @@ gta_delta_query=function(
     expanded.output=data.frame()
     for(i in 1:nrow(coarse)){
       expanded.codes=gta_hs_code_check(coarse$treatment.code[i])
+      if(length(expanded.codes)==0) expanded.codes =  coarse$treatment.code[i] # temporary fix, later will show popup with nonexistent provided codes
       expanded.output=rbind(expanded.output,
                             data.frame(processing.id=coarse$processing.id[i],
                                        treatment.code=as.double(expanded.codes),
@@ -178,6 +179,7 @@ gta_delta_query=function(
     expanded.output=data.frame()
     for(i in 1:nrow(vintage)){
       expanded.codes=gta_hs_vintage_converter(vintage$treatment.code[i], origin='any')
+      if(length(expanded.codes)==0) expanded.codes =  vintage$treatment.code[i] # temporary fix, later will show popup with nonexistent provided codes
       expanded.output=rbind(expanded.output,
                             data.frame(processing.id=vintage$processing.id[i],
                                        treatment.code=as.double(expanded.codes),
@@ -278,7 +280,7 @@ gta_delta_query=function(
   remote=gta_sql_get_value(sql.query, db.connection=db.connection)
   gta_sql_get_value(paste0('DROP TABLE IF EXISTS delta_',query.name,';'),db.connection=db.connection)
   
-  # remote$id=1:nrow(remote)
+  if(nrow(remote)>0) {
   remote$Match.precision='6 digit'
   keep.cols=names(remote)
   
@@ -304,6 +306,13 @@ gta_delta_query=function(
   remote$sort.result[which(remote$New.value > remote$Prior.value & remote$New.unit == remote$Prior.unit)]='Increase'
   remote$sort.result[which(remote$New.value == remote$Prior.value & remote$New.unit == remote$Prior.unit)]='Unchanged'
   colnames(remote)[names(remote)!='sort.result']=gsub('[.]',' ',colnames(remote)[names(remote)!='sort.result'])
+  } else {
+    
+    remote=setNames(data.frame(matrix(ncol = 14, nrow = 0)), 
+                    c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit",
+                      "Prior value","Prior unit","Prior date","Is mfn","Match precision","sort.result"))
+
+  }
   
   return(remote)
 }
