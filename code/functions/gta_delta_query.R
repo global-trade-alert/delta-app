@@ -30,11 +30,11 @@
 # new.treatment.value=input$new.treatment.value#rep(NA,10)
 # new.treatment.unit=input$new.treatment.unit#rep(NA,10)
 # treatment.area=input$treatment.area
-# treatment.code=875250
+# treatment.code=input$treatment.code
 # treatment.code=as.numeric(plyr::mapvalues(treatment.code,10121,101))
 # treatment.code.type=input$treatment.code.type
 # affected.country=input$affected.jurisdiction
-# affected.country[6:9]='MFN'
+# affected.country[7:9]='MFN'
 # db.connection='pool'
 # user=29
 
@@ -222,56 +222,30 @@ gta_delta_query=function(
   
   sql.query = paste0(
     "
-    SELECT user_query.implementer Implementing_jurisdiction, user_query.affected_country Affected_jurisdiction,  
-    user_query.treatment_code Affected_code, user_query.treatment_code_type Affected_code_type, user_query.treatment_area Policy_area,
-    user_query.cutoff_date New_date, user_query.new_treatment_value New_value, user_query.new_treatment_unit New_unit,
-    delta_tariff_log.treatment_value Prior_value, gta_unit_list.level_unit Prior_unit, MAX(delta_tariff_log.date_implemented) Prior_date, 
-    (CASE WHEN user_query.desired_nonmfn_state IS NULL THEN 'Yes' ELSE 'No' END) AS Is_mfn
-    FROM delta_record_linkage, delta_tariff_log, gta_unit_list,
-    ( # sub query to determine whether to report mfn or nonmfn value UNION those cases which specifically demand nonmfn
-    SELECT user_query.*, MAX(state_log.nonmfn_state) desired_nonmfn_state
-    FROM 
-    ( # add linkage_id to user query
-    SELECT delta_query_",user,".*, delta_linkage_log.linkage_id, delta_root_log.root_id, delta_linkage_log.linkage_affected_country_id FROM delta_query_",user,", delta_root_log, delta_linkage_log
-    WHERE delta_query_",user,".implementing_jurisdiction_id = delta_root_log.linkage_implementer_id
-    AND delta_query_",user,".treatment_code = delta_root_log.linkage_code
-    AND delta_query_",user,".treatment_code_type = delta_root_log.linkage_code_type
-    AND delta_root_log.root_id = delta_linkage_log.root_id 
-    AND delta_query_",user,".affected_country_id IS NOT NULL
-    AND (delta_query_",user,".affected_country_id = delta_linkage_log.linkage_affected_country_id OR delta_linkage_log.linkage_affected_country_id IS NULL)) user_query 
-    LEFT JOIN ( # sub query max date per linkage_id below the cutoff date from the user's query
-    SELECT delta_nonmfn_state_log.* FROM delta_nonmfn_state_log,
-    (SELECT MAX(nonmfn_state_date) nonmfn_state_date, nonmfn_state, linkage_id FROM delta_nonmfn_state_log, delta_query_",user," 
-    WHERE nonmfn_state_date <= delta_query_",user,".cutoff_date
-    GROUP BY linkage_id) max_dates
-    WHERE delta_nonmfn_state_log.linkage_id = max_dates.linkage_id
-    AND delta_nonmfn_state_log.nonmfn_state_date = max_dates.nonmfn_state_date
-    ) state_log
-    ON user_query.linkage_id = state_log.linkage_id
-    WHERE (state_log.nonmfn_state > 0 OR state_log.nonmfn_state IS NULL)
-    GROUP BY user_query.root_id
-    UNION
-    SELECT delta_query_",user,".*, delta_linkage_log.linkage_id, delta_root_log.root_id, 
-    delta_linkage_log.linkage_affected_country_id, NULL as desired_nonmfn_state 
-    FROM delta_query_",user,", delta_root_log, delta_linkage_log
-    WHERE delta_query_",user,".implementing_jurisdiction_id = delta_root_log.linkage_implementer_id
-    AND delta_query_",user,".treatment_code = delta_root_log.linkage_code
-    AND delta_query_",user,".treatment_code_type = delta_root_log.linkage_code_type
-    AND delta_root_log.root_id = delta_linkage_log.root_id 
-    AND delta_query_",user,".affected_country_id IS NULL 
-    AND delta_linkage_log.linkage_affected_country_id IS NULL
-    ) user_query
-    WHERE user_query.linkage_id = delta_record_linkage.linkage_id
-    AND delta_record_linkage.record_id = delta_tariff_log.record_id
-    AND user_query.cutoff_date >= delta_tariff_log.date_implemented
-    AND user_query.treatment_code = delta_tariff_log.treatment_code 
-    AND user_query.treatment_code_type = delta_tariff_log.treatment_code_type
-    AND gta_unit_list.level_unit_id = delta_tariff_log.treatment_unit_id
-    GROUP BY user_query.linkage_id
-    ;
-    
-
-    
+    SELECT query.implementer Implementing_jurisdiction, query.affected_country Affected_jurisdiction, query.treatment_code Affected_code, query.treatment_code_type Affected_code_type, query.treatment_area Policy_area,
+    query.cutoff_date New_date, query.new_treatment_value New_value, query.new_treatment_unit New_unit, tar_log.treatment_value Prior_value, gta_unit_list.level_unit Prior_unit, MAX(tar_log.date_implemented) Prior_date,
+    (CASE WHEN max_nonmfn.nonmfn_state = 1 THEN 'No' ELSE 'Yes' END) AS Is_mfn, src_log.state_act_source Source
+    FROM delta_query_",user," query
+    LEFT JOIN delta_root_log root_log
+    ON root_log.linkage_implementer_id = query.implementing_jurisdiction_id AND root_log.linkage_code = query.treatment_code AND root_log.linkage_code_type = query.treatment_code_type
+    LEFT JOIN delta_linkage_log mfn_link_log
+    ON root_log.root_id = mfn_link_log.root_id AND mfn_link_log.linkage_affected_country_id IS NULL
+    LEFT JOIN delta_linkage_log nonmfn_link_log
+    ON root_log.root_id = nonmfn_link_log.root_id AND query.affected_country_id = nonmfn_link_log.linkage_affected_country_id
+    LEFT JOIN (SELECT query.*, nonmfn_log.linkage_id, nonmfn_log.nonmfn_state, MAX(nonmfn_log.nonmfn_state_date) 
+    		   FROM delta_query_",user," query
+    		   JOIN delta_root_log root_log
+    		   ON root_log.linkage_implementer_id = query.implementing_jurisdiction_id AND root_log.linkage_code = query.treatment_code AND root_log.linkage_code_type = query.treatment_code_type
+    	       JOIN delta_linkage_log nonmfn_link_log ON root_log.root_id = nonmfn_link_log.root_id AND nonmfn_link_log.linkage_affected_country_id = query.affected_country_id
+    		   JOIN delta_nonmfn_state_log nonmfn_log ON nonmfn_link_log.linkage_id = nonmfn_log.linkage_id 
+    	       AND nonmfn_log.nonmfn_state_date <= query.cutoff_date 
+    		   GROUP BY nonmfn_log.linkage_id) max_nonmfn ON nonmfn_link_log.linkage_id = max_nonmfn.linkage_id
+    JOIN delta_treatment_linkage treat_link ON (CASE WHEN max_nonmfn.nonmfn_state = 1 THEN nonmfn_link_log.linkage_id ELSE mfn_link_log.linkage_id END) = treat_link.linkage_id
+    JOIN delta_tariff_log tar_log ON tar_log.treat_id = treat_link.treat_id AND query.cutoff_date >= tar_log.date_implemented
+    JOIN delta_treatment_record treat_rec ON treat_rec.treat_id = treat_link.treat_id JOIN delta_record_source rec_src ON treat_rec.record_id = rec_src.record_id JOIN delta_source_log src_log ON rec_src.source_id = src_log.source_id
+    JOIN gta_unit_list ON tar_log.treatment_unit_id = gta_unit_list.level_unit_id
+    GROUP BY query.implementer, query.cutoff_date, query.new_treatment_value, query.new_treatment_unit, query.treatment_area, query.treatment_code, query.treatment_code, query.affected_country, rec_src.source_id;
+    		   
     "
   )
   
@@ -283,6 +257,12 @@ gta_delta_query=function(
   if(nrow(remote)>0) {
   remote$Match.precision='6 digit'
   keep.cols=names(remote)
+  remote$New.date = as.Date(remote$New.date)
+  remote = merge(remote, query.table, all.y = T,
+               by.x=c("Implementing.jurisdiction","New.date","New.value","New.unit","Policy.area","Affected.code","Affected.code.type","Affected.jurisdiction"),
+               by.y=c("implementer","cutoff.date","new.treatment.value","new.treatment.unit","treatment.area","treatment.code","treatment.code.type","affected.country")
+               )
+  
   
   add.entries=subset(remote, !Affected.code %in% query.codes)
   setnames(add.entries,c('Prior.value','Prior.unit','Prior.date'),c('six.Prior.value','six.Prior.unit','six.Prior.date'))
@@ -308,9 +288,9 @@ gta_delta_query=function(
   colnames(remote)[names(remote)!='sort.result']=gsub('[.]',' ',colnames(remote)[names(remote)!='sort.result'])
   } else {
     
-    remote=setNames(data.frame(matrix(ncol = 14, nrow = 0)), 
+    remote=setNames(data.frame(matrix(ncol = 15, nrow = 0)), 
                     c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit",
-                      "Prior value","Prior unit","Prior date","Is mfn","Match precision","sort.result"))
+                      "Prior value","Prior unit","Prior date","Is mfn","Source","Match precision","sort.result"))
 
   }
   

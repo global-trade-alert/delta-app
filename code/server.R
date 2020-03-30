@@ -11,6 +11,8 @@ server <- function(input, output, session) {
                     confirm.xlsx = 0,
                     confirm.opt.cols=NULL,
                     unrecognized.variables=NULL,
+                    rollback.display=NULL,
+                    discrepancy.display=NULL,
                     xlsx.query = NULL,
                     xlsx.query.rnd = 0,
                     clear.query.xlsx = FALSE,
@@ -48,8 +50,7 @@ server <- function(input, output, session) {
       
       RV$confirm.xlsx = gta_delta_input_check(RV$confirm.xlsx)
       if (isFALSE(RV$confirm.xlsx[[1]])){
-        show('display')
-        hide('unrecognized.variables')
+        hideElement('unrecognized.variables')
         
         shinyalert('All variables are interpretable too!', 
                    RV$confirm.xlsx[[2]], type = "warning", 
@@ -88,9 +89,12 @@ server <- function(input, output, session) {
         
       } else {
         RV$unrecognized.variables=RV$confirm.xlsx[[3]]
+        hideElement('sorted.display')
+        hideElement('unsorted.display')
+        hideElement('rollback.display')
+        showElement('unrecognized.variables')
+        hideElement('discrepancy.display')
         
-        hide('display')
-        show('unrecognized.variables')
         shinyalert('Rejected variables!', 
                    HTML(RV$confirm.xlsx[[2]]), type = "error")
         click('clear.xlsx')
@@ -186,13 +190,16 @@ server <- function(input, output, session) {
                                    db.connection='pool',
                                    user=input$users))
       
-      display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision","Is mfn")
+      display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision","Is mfn","Source")
       
       if(all(is.na(as.data.frame(RV$display[[1]][,c("Prior value","Prior unit","Prior date")])))){
         showNotification('sadly no rows matching your query were found :(', duration=10)
       } else if(!all(is.na(as.data.frame(RV$display[[1]])[,c('New value','New unit')]))){
         showElement('sorted.display')
         hideElement('unsorted.display')
+        hideElement('rollback.display')
+        hideElement('unrecognized.variables')
+        hideElement('discrepancy.display')
         
         output$sorted.display <- renderUI({
           nTabs = length(RV$display)
@@ -281,6 +288,9 @@ server <- function(input, output, session) {
       } else {
         showElement('unsorted.display')
         hideElement('sorted.display')
+        hideElement('rollback.display')
+        hideElement('unrecognized.variables')
+        hideElement('discrepancy.display')
         
         output$unsorted.display <- renderUI({
           nTabs = length(RV$display)
@@ -329,7 +339,7 @@ server <- function(input, output, session) {
   output$dl <- downloadHandler(
     filename = function() {paste0(Sys.Date(),' query.xlsx')},
     content = function(file) {
-      keep.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision","Is mfn")
+      keep.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision","Is mfn","Source")
       
       if(!all(is.na(as.data.frame(RV$display[[1]][,c("New value","New unit")])))){
         
@@ -365,14 +375,17 @@ server <- function(input, output, session) {
                                             user=input$users)
                     )
     
-    display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision","Is mfn")
+    display.cols=c("Implementing jurisdiction","Affected jurisdiction","Affected code","Affected code type","Policy area","New date","New value","New unit","Prior value","Prior unit","Prior date","Match precision","Is mfn","Source")
     
     if(all(is.na(as.data.frame(RV$display[[1]][,c("Prior value","Prior unit","Prior date")])))){
       showNotification('sadly no rows matching your query were found', duration=10)
     } else if(!all(is.na(as.data.frame(RV$display[[1]])[,c('New value','New unit')]))){
     showElement('sorted.display')
     hideElement('unsorted.display')
-      
+    hideElement('rollback.display')
+    hideElement('unrecognized.variables')
+    hideElement('discrepancy.display')
+    
     output$sorted.display <- renderUI({
       nTabs = length(RV$display)
       # create tabPanel with datatable in it
@@ -460,7 +473,10 @@ server <- function(input, output, session) {
     } else {
       showElement('unsorted.display')
       hideElement('sorted.display')
-
+      hideElement('unrecognized.variables')
+      hideElement('rollback.display')
+      hideElement('discrepancy.display')
+      
       output$unsorted.display <- renderUI({
         nTabs = length(RV$display)
         myTabs = lapply(seq_len(nTabs), function(i) {
@@ -491,4 +507,97 @@ server <- function(input, output, session) {
     }
     
   })
+  
+  
+  
+  # launch query for inputs in rollback tab
+  observeEvent(input$rollback.launch.query, {
+    hideElement('unsorted.display')
+    hideElement('sorted.display')
+    hideElement('unrecognized.variables')
+    showElement('rollback.display')
+    hideElement('discrepancy.display')
+    
+    RV$rollback.display = gta_delta_input_query(pull.inputs=T,
+                                                pull.input.records=F,
+                                                pull.input.id.records = c(),
+                                                regex.field=input$rollback.regex.field,
+                                                treatment.area='tariff',
+                                                db.connection='pool')
+    output$rollback.display = DT::renderDataTable(
+      exp=RV$rollback.display,
+      rownames = F,
+      selection='single',
+      options = list(
+        pageLength = 30,
+        scrollX='400px',
+        dom = 'Brtip',
+        stateSave = TRUE,
+        language = list(
+          zeroRecords = "Blabla no rows remain for selected criterion")
+      ),
+      server=FALSE
+    )
+    
+  })
+  
+  observeEvent(input$rollback.delete.input, {
+    if(length(input$rollback.display_rows_selected)!=1){
+      showNotification('you need to select an input to delete!', duration=5)
+    } else {
+      gta_delta_rollback_input(input.id = RV$rollback.display$input.id[input$rollback.display_rows_selected], db.connection = 'pool')
+    }
+  })
+  
+  observeEvent(input$discrepancy.launch.query, {
+    hideElement('unsorted.display')
+    hideElement('sorted.display')
+    hideElement('unrecognized.variables')
+    hideElement('rollback.display')
+    showElement('discrepancy.display')
+    
+    RV$discrepancy.display = gta_sql_get_value('SELECT * FROM delta_input_discrepancy_log ORDER BY discrepancy_id;')
+    output$discrepancy.display = DT::renderDataTable(
+      exp=RV$discrepancy.display,
+      rownames = F,
+      options = list(
+        pageLength = 30,
+        scrollX='400px',
+        dom = 'Brtip',
+        stateSave = TRUE,
+        language = list(
+          zeroRecords = "Blabla no rows remain for selected criterion")
+      ),
+      server=FALSE
+    )
+    
+  })
+  
+  observeEvent(input$discrepancy.delete.input, {
+    if(length(input$discrepancy.display_rows_selected)<1){
+      showNotification('you need to select at least one discrepancy to delete!', duration=5)
+    } else {
+      
+      shinyalert('Discrepancies were correctly selected!',
+                 'Do you wish to keep the discrepancy values or cancel them?', type = "warning",
+                 showCancelButton = T,
+                 confirmButtonText = 'Keep discrepancies',
+                 #on user response, if confirm and non empty input name start upload
+                 callbackR = function(x) {
+                   if(x==T){
+                     gta_delta_resolve_discrepancy(discrepancy.ids = RV$discrepancy.display$discrepancy.id[input$discrepancy.display_rows_selected],
+                                                   db.connection = 'pool',
+                                                   keep.discrepancy.value = T,
+                                                   user.id = input$users)
+                   } else {
+                     gta_delta_resolve_discrepancy(discrepancy.ids = RV$discrepancy.display$discrepancy.id[input$discrepancy.display_rows_selected],
+                                                   db.connection = 'pool',
+                                                   keep.discrepancy.value = F,
+                                                   user.id = input$users)
+                   }
+                 })
+    }
+  })
+  
+  
 }

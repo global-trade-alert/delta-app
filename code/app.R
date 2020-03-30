@@ -28,7 +28,7 @@ options(shiny.maxRequestSize=2000*1024^2)
 
 # setwd("/home/rstudio/Dropbox/GTA cloud")
 gta_setwd()
-app.path<<-'0 dev/delta-app-ks/code/'
+app.path<<-'17 Shiny/6 delta app/code/'
 source(paste0(app.path,'server.R'))
 source(paste0(app.path,'ui.R'), local=T)
 source(paste0(app.path,'functions/gta_delta_get_jurisdiction_id.R'))
@@ -37,6 +37,9 @@ source(paste0(app.path,'functions/gta_delta_input_check.R'))
 source(paste0(app.path,'functions/gta_delta_input_ids.R'))
 source(paste0(app.path,'functions/gta_delta_input_upload.R'))
 source(paste0(app.path,'functions/gta_delta_query.R'))
+source(paste0(app.path,'functions/gta_delta_input_query.R'))
+source(paste0(app.path,'functions/gta_delta_rollback_input.R'))
+source(paste0(app.path,'functions/gta_delta_resolve_discrepancy.R'))
 
 
 shinyApp(ui,

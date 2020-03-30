@@ -42,6 +42,12 @@ ui <- fluidPage(
                                                        ),
                                                        tags$li(class="upload",
                                                                HTML("<a data-toggle='tab' href='#upload'> Upload data </a>")
+                                                       ),
+                                                       tags$li(class="rollback",
+                                                               HTML("<a data-toggle='tab' href='#rollback'> Rollback tab </a>")
+                                                       ),
+                                                       tags$li(class="discrepancy",
+                                                               HTML("<a data-toggle='tab' href='#discrepancy'> Discrepancy tab </a>")
                                                        )))),
                              tags$div(class="settings-bottom",
                                       # tags$div(class="scroll",
@@ -51,7 +57,7 @@ ui <- fluidPage(
                                                              tags$div(class="suggestions",
                                                                       textAreaInput("treatment.codes",
                                                                                     label = "Treatment code input (csv).",
-                                                                                    value = '680520',
+                                                                                    value = '110812',
                                                                                     width = '200px',
                                                                                     rows = 2))),
                                                       column(width=5,
@@ -89,7 +95,7 @@ ui <- fluidPage(
                                                                                  choices = c('MFN',gta_sql_get_value(paste('select distinct `jurisdiction_name` from gta_jurisdiction_list union',
                                                                                                                    'select distinct `jurisdiction_group_name` from gta_jurisdiction_group_list'))),
                                                                                                                            
-                                                                                 selected = c('Argentina')))),
+                                                                                 selected = c('MFN')))),
                                                       column(width=12,
                                                              column(width=6,
                                                                     tags$div(class="suggestions",
@@ -159,6 +165,48 @@ ui <- fluidPage(
                                                
                                       ),
                                       
+                                      tags$div(class="tab-pane fade", id="rollback",
+                                               column(width=12,
+                                                      tags$div(class="suggestions",
+                                                               tags$div(class="rollback",
+                                                                        textInput("rollback.regex.field",
+                                                                                      label = "Regex field.",
+                                                                                      value = NULL)))
+                                                               ),
+                                               column(width=12,
+                                                      tags$div(class="suggestions",
+                                                               tags$div(class="rollback",
+                                                                        actionBttn("rollback.delete.input",
+                                                                                   label = "Delete selected input")))
+                                               ),
+                                               column(width=12,
+                                                      tags$div(class="suggestions",
+                                                               tags$div(class="rollback",
+                                                                        actionBttn("rollback.launch.query",
+                                                                                  label = "Go")))
+                                               )
+                                                      
+                                               
+                                      ),
+                                      
+                                      tags$div(class="tab-pane fade", id="discrepancy",
+                                               column(width=12,
+                                                      tags$div(class="suggestions",
+                                                               tags$div(class="discrepancy",
+                                                                        actionBttn("discrepancy.delete.input",
+                                                                                   label = "Delete selected input")))
+                                               ),
+                                               column(width=12,
+                                                      tags$div(class="suggestions",
+                                                               tags$div(class="discrepancy",
+                                                                        actionBttn("discrepancy.launch.query",
+                                                                                   label = "Go")))
+                                               )
+                                               
+                                               
+                                      ),
+                                      
+                                      
                                       tags$div(class="continue-button",
                                                column(width=12,
                                                       actionButton("submit.query",
@@ -175,7 +223,10 @@ ui <- fluidPage(
                              downloadButton("dl", "Download"),
                              uiOutput('sorted.display'),
                              uiOutput('unsorted.display'),
+                             dataTableOutput('rollback.display'),
+                             dataTableOutput('discrepancy.display'),
                              dataTableOutput('unrecognized.variables')
+
                     )
            )
            

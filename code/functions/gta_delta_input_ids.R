@@ -61,9 +61,9 @@ gta_delta_input_ids=function(
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_unit_list WHERE (lower(level_unit) IN (%s) OR level_unit_id IN (%s))", 
                                    rep(toString(sprintf("'%s'",tolower(unique(treatment.unit)))), 2))))
   temp=gta_sql_get_value(sql)
-  output$treatment.unit.id=mapvalues(tolower(treatment.unit),
+  output$treatment.unit.id=as.numeric(mapvalues(tolower(treatment.unit),
                                      tolower(temp$level.unit),
-                                     temp$level.unit.id)
+                                     temp$level.unit.id))
 
   ##treatment.code.official
   output$treatment.code.official=as.logical(mapvalues(tolower(treatment.code.official),c('yes','no','t','f','true','false'),c('True','False','True','False','True','False')))
@@ -83,9 +83,9 @@ gta_delta_input_ids=function(
   sql=do.call('sprintf', as.list(c("SELECT intervention_type, intervention_type_id FROM gta_intervention_type_list WHERE (lower(intervention_type) IN (%s) OR intervention_type_id IN (%s))", 
                                    rep(toString(sprintf("'%s'",tolower(unique(intervention.type)))), 2))))
   temp=gta_sql_get_value(sql)
-  output$intervention.type.id=mapvalues(tolower(intervention.type),
+  output$intervention.type.id=as.numeric(mapvalues(tolower(intervention.type),
                                   tolower(temp$intervention.type),
-                                  temp$intervention.type.id)
+                                  temp$intervention.type.id))
 
   ##state.act.source
   output$state.act.source=as.character(source)
@@ -106,25 +106,23 @@ gta_delta_input_ids=function(
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_affected_flow_list WHERE (lower(affected_flow) IN (%s) OR affected_flow_id IN (%s))", 
                                    rep(toString(sprintf("'%s'",tolower(unique(affected.flow)))), 2))))
   temp=gta_sql_get_value(sql)
-  output$affected.flow.id=mapvalues(tolower(affected.flow),
+  output$affected.flow.id=as.numeric(mapvalues(tolower(affected.flow),
                                     tolower(temp$affected.flow),
-                                    temp$affected.flow.id)
+                                    temp$affected.flow.id))
   ##implementation.level.id
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_implementation_level_list WHERE (lower(implementation_level_name) IN (%s) OR implementation_level_id IN (%s))", 
                                    rep(toString(sprintf("'%s'",tolower(unique(implementation.level)))), 2))))
   temp=gta_sql_get_value(sql)
-  output$implementation.level.id=mapvalues(tolower(implementation.level),
+  output$implementation.level.id=as.numeric(mapvalues(tolower(implementation.level),
                                            tolower(temp$implementation.level.name),
-                                           temp$implementation.level.id)
-  
+                                           temp$implementation.level.id))
   ##eligible.firms.id
   sql=do.call('sprintf', as.list(c("SELECT * FROM gta_eligible_firms_list WHERE (eligible_firms_id IN (%s) OR lower(eligible_firms_name) IN (%s))", 
                                    rep(toString(sprintf("'%s'",tolower(unique(eligible.firms)))), 2))))
   temp=gta_sql_get_value(sql)
-  output$eligible.firms.id=mapvalues(tolower(eligible.firms),
+  output$eligible.firms.id=as.numeric(mapvalues(tolower(eligible.firms),
                                      tolower(temp$eligible.firms.name),
-                                     temp$eligible.firms.id)
-  
+                                     temp$eligible.firms.id))
   ##implementer.end.date
   output$implementer.end.date=as.Date(implementer.end.date)
   
